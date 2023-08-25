@@ -1,2 +1,123 @@
+/* Copyright (C) Ofir Dubi - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * Written by Ofir Dubi, 2023
+ */
+
 # Tremp
+
 tremp app
+This is the repo for the app that's a combination between Moovit and Waze, and it's suppose to solve the following problem - 
+if someone can give you a ride, but he will only diviate 5-min from his planned trajectory, what is the best possible drop location i can get, 
+so that continuing from there by public transportaion will provide the shourtest trip time.
+
+## Phase 1 - The Algorithm
+I need to figure out alot of stuff - 
+1. how can i connect to Google API (or is there another possible way to achive maps data).
+2. how can i connect to bus API
+3. Should the algorith run on the phone or on a server - for starters i will do it on the server, and will develop a python client side beacuse idk how to do an app
+
+ok... This problem is conceptually kind of solved - There is this thing called Multimodal transportaion. and google maps at some locations will allow you
+to include an Uber ride in your trip. So basically i need to replace that Uber ride with a ride from the starting location to a location in X min radius.
+I will start with that, and maybe then i will run this search again on the length of original car trajectory.
+This is not so nice as it's O(n), it will be better to use Djikstra's, and to make each car edge i take will have a "price", and there is a sum that i can't pass (5 min).
+
+
+So... lets get started. First i need the data.
+
+## The Database
+I'm probably gonna use OpenStreetMap
+Advantages - 
+    * open data about wayy and routes
+    * can provide distance.
+    * has data about bus stations
+    * Has speed limit of some ways, not all of them
+        * I can probably infer the speed limits of the missing onse by road type (Primary roads).
+    * There are some routing apps which are based on the map's data, so it should also have the driving direction of roads.
+        * Yes - the order in which the nodes apear in a way, is the order in which the traffic flows.
+Disadvantages - 
+    * Does not provide speed limits for all roads 
+    * Does not have live trafic data (rush hours, traffic jams, etc).
+    * Not sure if it has railway information
+        * That can be added at a later time. 
+
+## Quick search - 
+    * I can use Photon for this, it uses elastic search on OpenStreetMap, which is kindof what i wanted to do anyway. 
+
+
+# The Algorithm
+an "Isochrone" can be fetcehd - given a location and a time travel contraint, an Isochrone is a polygon which includes all the points the car can get to within that time limit. 
+This is pretty usefull for me, as what i'd like to do is generate a path for the car, then get Isochrones for the car path (i can do this efficiently i guess),
+
+And then basically get the best starting node from within that graph to the target location. This can be tricky, because i don't just want to run this calculation on all the nodes. 
+I can use a greedy method maybe - 
+    1. I will search for each node on the original route
+    2. For each node, i will search for it's neighbors. 
+    3. For each neighbor, I will keep searching his neighbor only
+        If it produced a better result then the original search did. 
+        * Of course this can lead to mistakes, but maybe it won't 
+
+* A* Algorith - Like Djikstra's, but to every node, you add to the minimal cost of going to it it's distance from the target destenation.  
+A* is obviosly the way to go.
+Let's say driver is going from A to B, and i need to get from A to C.
+If i want a quick POC, i can use the following -
+    1. Get GSM data, populate all bust stations, ETC. 
+    2. Get route (or let's say top 3 routes) with car for the drivers original destenation
+        2.1 for each node, get the nodes which are 5-min driver from this node.
+            2.1.a This can be optimized, i should probably use Isochrone for this. 
+    3. Add all this route as a new bus line to the existing GSM data.
+    4. Search for a route using "public transportation", only this will allow us to compine Tremps. 
+
+* An interesting thing to see is how are multi-modal route serching is done, and i can just copy this insetead of theorising about stuff. options are
+
+Steps for 7/12/2023:
+ - done - Get Location data of TLV instead of berlin (for fun)
+ - done -Setup IDE
+   - Get GTFS data of TLV.
+        This seems to be tricky. I can get the basic example kindof working, but when i try to laod israel data,
+        It complains that the GTFS is broken, and it does so only after 30 min of loading...
+ - Read about multi-modal routing
+
+Steps for 13/7/2023:
+    Following yesterday, i believe that GraphHopper will not work out of the box for me, so i'll try to use Valhalla.
+    Maybe i should consider trying to find something that works well for public transportaion first.
+
+# So let's fix israels GTFS!! 
+* i run the validator, sees that there are missing collumes in the translation table - it seems like it jsut not build right... 
+
+# I wil say that GraphHopper was very easy to setup.
+## Phase 2 - The App.
+
+
+This is a "Beaya handasit", so i'll deal with it once i have Phase 1 down. 
+
+I do have a dilema here - web based or native? 
+I think regardless of what i decide i can develop it and run it first with GraphHopper testing. 
+
+## Alternative for GraphHopper - 
+* https://openrouteservice.org/ - doesn't seem to support public transportaion
+* https://organicmaps.app/  - maybe i can use this, the code has support for GFTS but i can't get it to work locally ATM
+* Valhalla - sounds like this could work... 
+
+*  OpenTripPlanner, TripGo and Mapzen 
+
+## 08/17/2023 
+After viewing some lectures about SOTA algorithms, i've decided on the following steps imlementation
+    1. Write a parser for IS gtfs feed - should be like normal gtfs with google extensions. 
+        1.2. Checkpoint - present the data from gtfs on a map, to see that i know what i'm doing. 
+    2. Write a RAPTOR implementation (in CPP\python) for finding best paths using my GTFS feed
+        2.2 Checkpoint - present the ebst found graph on a map.
+        2.3 Integrate multi-modal trips - do this using  ULTRA-RAPTOR.
+    3. Integrate Tremps as a transportation method using the following method - 
+        a. Insert driver's original route (including departue-time)
+        b. Find fastest route using A*\A* with CH.
+        c. Get isotropic somthing on said route (produces entire stations in X min detour from said route)
+        d. Unpack the route found on the time table - treat the driver as a new line, and for every station node it in the isotropic region, inseart a new "stop" for in that station.
+            How to calculate the new stop time? might be tricky, need to see how i can unpack a fastest route, but shouldn't really be a problem i think.
+        3.1 Checkpoint - present this new line in line map (practically re-do 1.2)
+    4. Now when i run my RAPTOR implementation, it should consider the new line i added and give results according to it.
+
+
+
+# links
+https://www.youtube.com/watch?v=AdArDN4E6Hg&t=1s&ab_channel=DFG-FOR2083
