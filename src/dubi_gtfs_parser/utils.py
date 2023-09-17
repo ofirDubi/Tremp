@@ -1,0 +1,33 @@
+from bisect import bisect_left
+import time
+
+DEBUG_LOGS = True
+
+log_file = f"logs\\log_{int(time.time())}.txt"
+
+def print_log(*args, **kwargs):
+    if DEBUG_LOGS:
+        print("[+] ", *args, **kwargs)
+    log_to_file(*args, **kwargs)
+
+def log_to_file(*args, **kwargs):
+    if DEBUG_LOGS:
+        with open(log_file, "a") as f:
+            print("[+] ", *args, **kwargs, file=f)
+            
+def error_log_to_file(*args, **kwargs):
+    if DEBUG_LOGS:
+        with open(log_file, "a") as f:
+            print("[-] ", *args, **kwargs, file=f)
+            
+def BinarySearch(a, x):
+    i = bisect_left(a, x)
+    if i != len(a) and a[i] == x:
+        return i
+    else:
+        return -1
+
+def time_text_to_int(time_text):
+    h, m, s = time_text.split(":")
+    return (int(h) * 60 + int(m)) * 60 + int(s)
+
