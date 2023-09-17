@@ -1,7 +1,9 @@
 from bisect import bisect_left
 import time
+import pickle
 
 DEBUG_LOGS = True
+ARTIFACTS_FOLDER = "artifacts"
 
 log_file = f"logs\\log_{int(time.time())}.txt"
 
@@ -27,7 +29,22 @@ def BinarySearch(a, x):
     else:
         return -1
 
+def save_artifact(obj, filename) -> None:
+    pickle.dump(obj, open(filename, 'wb'))
+    
+def load_artifact(filename) -> None:
+    return pickle.load(open(filename, 'rb'))
+
+
+
 def time_text_to_int(time_text):
     h, m, s = time_text.split(":")
     return (int(h) * 60 + int(m)) * 60 + int(s)
 
+def get_some_items(d):
+    res = []
+    for i, k in enumerate(d.keys()):
+        if i >= 1:
+            break
+        res.append({k:d[k]})
+    return res

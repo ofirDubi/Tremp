@@ -1,7 +1,6 @@
 import os
 import matplotlib.pyplot as plt
 import tilemapbase
-import pickle
 import time
 
 from utils import *
@@ -10,8 +9,8 @@ VALIDATE = True
 COMPLETE_PARSE = False
 
 IS_GTFS_FOLDER = "../is_gtfs"
-IS_GTFS_OBJ = "artifacts\\is_gtfs_obj.obj"
-TLV_GTFS_OBJ = "artifacts\\tlv_gtfs_obj.obj"
+IS_GTFS_OBJ = os.path.join(ARTIFACTS_FOLDER, "is_gtfs_obj.obj")
+TLV_GTFS_OBJ = os.path.join(ARTIFACTS_FOLDER, "tlv_gtfs_obj.obj")
 
 #               (min_lon, max_lon, min_lat, max_lat)
 TEL_AVIV_AREA = (34.7127, 34.9437, 31.9280, 32.2012)
@@ -328,17 +327,14 @@ class GTFS:
 # I think i want a timetable - which is a list of stations, each station has some metadata(like name, id, location, etc)
 # And a list of connections/trips which runs through the stations.
 
-def save_gtfs_instance(gtfs_instance, filename) -> None:
-    pickle.dump(gtfs_instance, open(filename, 'wb'))
-def load_gtfs_instance(filename) -> None:
-    return pickle.load(open(filename, 'rb'))
-
 
 def get_trip_stations(gtfs_instance, trip_id):
     return [(trip_stop["stop_sequence"], gtfs_instance.stops[trip_stop["stop_id"]]) for trip_stop in gtfs_instance.stop_times[trip_id]]
     
 
-def display_stations(gtfs_instance, plot_chance=1, trip_id=None):
+# def display_stations_from_timetable(gtfs_instance, plot_chance=1, trip_id=None):
+
+def display_stations_from_gtfs(gtfs_instance, plot_chance=1, trip_id=None):
     """
     Display the stations on a map using tilemapbase
     @gtfs_instance - an instance of GTFS class
@@ -384,33 +380,26 @@ def display_stations(gtfs_instance, plot_chance=1, trip_id=None):
     # Show the plot
     plt.show()
 
-def get_some_items(d):
-    res = []
-    for i, k in enumerate(d.keys()):
-        if i >= 1:
-            break
-        res.append({k:d[k]})
-    return res
 
 def get_is_gtfs(reparse=False):
     if os.path.isfile(IS_GTFS_OBJ) and not reparse:
         print_log("loading gtfs from file...")
-        return load_gtfs_instance(IS_GTFS_OBJ)
+        return load_artifact(IS_GTFS_OBJ)
     else:
         print_log("parsing gtfs from folder...")
         gtfs = GTFS(IS_GTFS_FOLDER)
-        save_gtfs_instance(gtfs, IS_GTFS_OBJ)
+        save_artifact(gtfs, IS_GTFS_OBJ)
         return gtfs
 
 def get_is_tlv_gtfs(reparse=False):
     if os.path.isfile(TLV_GTFS_OBJ) and not reparse:
         print_log("loading gtfs from file...")
-        return load_gtfs_instance(TLV_GTFS_OBJ)
+        return load_artifact(TLV_GTFS_OBJ)
     else:
         print_log("parsing reducing from is_gtfs...")
         gtfs = get_is_gtfs()
         rgtfs = reduce_gtfs(gtfs, *TEL_AVIV_AREA)
-        save_gtfs_instance(rgtfs, TLV_GTFS_OBJ)
+        save_artifact(rgtfs, TLV_GTFS_OBJ)
         return gtfs
 
 
