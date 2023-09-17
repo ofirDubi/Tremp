@@ -1,44 +1,20 @@
 import os
-import csv
 import matplotlib.pyplot as plt
 import tilemapbase
-from bisect import bisect_left
 import pickle
 import time
 
+from utils import *
+
 VALIDATE = True
-DEBUG_LOGS = True
 COMPLETE_PARSE = False
 
-log_file = f"log_{int(time.time())}.txt"
+IS_GTFS_FOLDER = "../is_gtfs"
+IS_GTFS_OBJ = "artifacts\\is_gtfs_obj.obj"
+TLV_GTFS_OBJ = "artifacts\\tlv_gtfs_obj.obj"
 
-def print_log(*args, **kwargs):
-    if DEBUG_LOGS:
-        print("[+] ", *args, **kwargs)
-    log_to_file(*args, **kwargs)
-
-def log_to_file(*args, **kwargs):
-    if DEBUG_LOGS:
-        with open(log_file, "a") as f:
-            print("[+] ", *args, **kwargs, file=f)
-            
-def error_log_to_file(*args, **kwargs):
-    if DEBUG_LOGS:
-        with open(log_file, "a") as f:
-            print("[-] ", *args, **kwargs, file=f)
-            
-def BinarySearch(a, x):
-    i = bisect_left(a, x)
-    if i != len(a) and a[i] == x:
-        return i
-    else:
-        return -1
-
-def time_text_to_int(time_text):
-    h, m, s = time_text.split(":")
-    return (int(h) * 60 + int(m)) * 60 + int(s)
-
-
+#               (min_lon, max_lon, min_lat, max_lat)
+TEL_AVIV_AREA = (34.7127, 34.9437, 31.9280, 32.2012)
 class CSVParser:
     def __init__(self, file_path) -> None:
         self.file_path = file_path
@@ -76,8 +52,6 @@ class CSVParser:
 
 class GTFS:
     """
-    TODO: change data stractures to be dicts, where data of X is mapped by X_id, instead of lists.
-
 
     This class represent a parsed GTFS folder.
     It should contain the following data (might be more fileds but these are mandatory):
@@ -116,9 +90,7 @@ class GTFS:
     # I can create connections by iterating stop_times of a given trip and create a connection for each pair of consecutive stop_times.
     """
 
-
-    
-    def __init__(self, folder_path) -> None:
+    def __init__(self, folder_path, load_existing=False) -> None:
         # In init read all the files and create a dict of dataframes
         if not os.path.isdir(folder_path):
             raise ValueError("The path provided is not a directory")
@@ -139,6 +111,10 @@ class GTFS:
             self.fare_rules = self._parse_fare_rules()
             self.translations = self._parse_translations()
     
+
+    def load():
+        pass
+        # populate everything
     def _parse_agencies(self):
         agensies_path = os.path.join(self.folder_path, "agency.txt")
         parser = CSVParser(agensies_path)
@@ -246,29 +222,62 @@ class GTFS:
         if VALIDATE:
             # Validate stop times
             print_log("validating stop times....")
-            for i, st_list in enumerate(stop_times.values()):
+            for i, (st_keys, st_list) in enumerate(stop_times.items()):
                 if i % 1000 == 0:
                     print_log("validated {} stop_times...".format(i))
                 try:
+                    # sort this by stop_sequence, as we've seen it's not always sorted
+                    sorted_st_list = sorted(st_list, key=lambda x: int(x["stop_sequence"]))
+                    stop_times[st_keys] = sorted_st_list
                     prev_sequence = -1
                     prev_dipartue_time = "00:00:00"
+                    prev_stop = None
                     # TODO: some sequences are not ordered currectly - maybe add a sort here (it's only about 200 out of 191592)
-                    for st in st_list:
+                    for st in sorted_st_list:
                         if st["trip_id"] not in self.trips:
                             raise ValueError("trip_id {} not found in trips".format(st["trip_id"]))
                         if st["stop_id"] not in self.stops:
                             raise ValueError("stop_id {} not found in routes".format(st["stop_id"]))
                         if int(st["stop_sequence"]) < prev_sequence:
+                            # TODO: this jumps alot, which means that this is not sorted in any way
+                            # From an investigation i did, it seesm like the sequence is not right in 2 cases
+                            # * sometimes when the same stations is visited twice in the same trip.
+                            # * sometimes when the trip time is crossing midnight
                             raise ValueError("stop_sequence {}, {} in wrong order in stop_times".format(prev_sequence, st["stop_sequence"]))
+                        
                         # Check if arrival time is before prev depatrue time
+                        # arrival time of 00:02:00 is before previous departure time 23:52:00,               
                         if time_text_to_int(st["arrival_time"]) < time_text_to_int(prev_dipartue_time):
-                            raise ValueError("arrival time of {} if before previous departure time".format(st["arrival_time"], prev_dipartue_time ))
+                            if time_text_to_int(st["arrival_time"]) < time_text_to_int("12:00:00") and time_text_to_int(prev_dipartue_time) > time_text_to_int("12:00:00"):
+                                # Do heuristics which assumes trip doesn't take more then 12 hours.
+                                # If this happens then we crossed midnight, so this is ok
+                                log_to_file("identified day transfer")
+                            else:
+                                # After sequences are sorted out then several things might be bad
+                                # 1. The trip is visiting the same station twice
+                                if st["stop_id"] == prev_stop["stop_id"]:
+                                    log_to_file("identified same station twice")
+                                    # swap arival\departure times...
+                                    tmp_arrival = st["arrival_time"]
+                                    tmp_departure = st["departure_time"]
+                                    st["arrival_time"] = prev_stop["arrival_time"]
+                                    st["departure_time"] = prev_stop["departure_time"]
+                                    prev_stop["arrival_time"] = tmp_arrival
+                                    prev_stop["departure_time"] = tmp_departure
+                                else:
+                                    # 2. The times are simply messed up
+                                    # For now just keep it that way, from a few trips i've examined i saw that this is probably a mistake
+                                    # The sequences are correct, but the times are not.
+                                    # And that by always fixing the arrival time to be after the previous departure time, we get the right order.
+                                    raise ValueError("arrival time of {} is before previous departure time {}, sequences {}, {}".format(
+                                        st["arrival_time"], prev_dipartue_time, st["stop_sequence"], prev_sequence))
+                        
                         prev_sequence = int(st["stop_sequence"])
                         prev_dipartue_time = st["departure_time"]
-
+                        prev_stop = st
                 except ValueError as e:
                     # print("got exception on stop_times - ", st_list, i)
-                    bad_stop_times.append((st_list, str(e)))
+                    bad_stop_times.append((sorted_st_list, str(e)))
                     prev_sequence = -1
                     prev_dipartue_time = "00:00:00"
                     continue
@@ -277,11 +286,11 @@ class GTFS:
                 error_log_to_file("Got bad stop_times:")
                 error_log_to_file(bad_stop_times)
 
-            for st_list in bad_stop_times:
-            # Pop bad trips from trips dict - do this in different loop because of python shit
-                stop_times.pop(st_list[0][0]["trip_id"])
+            # for st_list in bad_stop_times:
+            # # Pop bad trips from trips dict - do this in different loop because of python shit
+            #     stop_times.pop(st_list[0][0]["trip_id"])
             print_log("finished validating stop_times.")
-                        # I see that i get some trips without headsigns, which screws me, because then shape_id is shifted one left.
+            # I see that i get some trips without headsigns, which screws me, because then shape_id is shifted one left.
             # Or alternativly, there is no shape_id and the headsign is a number, which is wired. 
             print_log(f"got {len(bad_stop_times)} bad stop_times out of {len(bad_stop_times) + len(stop_times)} stop_times")
         return stop_times
@@ -319,18 +328,17 @@ class GTFS:
 # I think i want a timetable - which is a list of stations, each station has some metadata(like name, id, location, etc)
 # And a list of connections/trips which runs through the stations.
 
-
-# What i need - a list of connection. a connection is a tuple of 5  elements:
-# - depatrue stop
-# - arrival stop
-# - depatrue time
-# - arrival time
-# - trip id (trip is a sequence of connections)
-
-# def setup_tilemapbase():
+def save_gtfs_instance(gtfs_instance, filename) -> None:
+    pickle.dump(gtfs_instance, open(filename, 'wb'))
+def load_gtfs_instance(filename) -> None:
+    return pickle.load(open(filename, 'rb'))
 
 
-def display_stations(gtfs_instance, plot_chance=1):
+def get_trip_stations(gtfs_instance, trip_id):
+    return [(trip_stop["stop_sequence"], gtfs_instance.stops[trip_stop["stop_id"]]) for trip_stop in gtfs_instance.stop_times[trip_id]]
+    
+
+def display_stations(gtfs_instance, plot_chance=1, trip_id=None):
     """
     Display the stations on a map using tilemapbase
     @gtfs_instance - an instance of GTFS class
@@ -353,13 +361,26 @@ def display_stations(gtfs_instance, plot_chance=1):
 
     plotter = tilemapbase.Plotter(extent, t, width=600)
     plotter.plot(ax, t)
-    plot_filter = 1//plot_chance
-    longs = (float(s["stop_lon"]) for s in gtfs_instance.stops.values() if int(s["stop_id"]) % plot_filter == 0)
-    lats = (float(s["stop_lat"]) for s in gtfs_instance.stops.values() if int(s["stop_id"]) % plot_filter == 0)
+    if trip_id is not None:    
+        # display stations that are on trip 58849630_170223
+        stations_seq = get_trip_stations(gtfs_instance, trip_id)
+        print("got specific stations for trip")
+        print(stations_seq)
+
+        longs = (float(s[1]["stop_lon"]) for s in stations_seq)
+        lats = (float(s[1]["stop_lat"]) for s in stations_seq)
+
+    else:
+        plot_filter = 1//plot_chance
+        longs = (float(s["stop_lon"]) for s in gtfs_instance.stops.values() if int(s["stop_id"]) % plot_filter == 0)
+        lats = (float(s["stop_lat"]) for s in gtfs_instance.stops.values() if int(s["stop_id"]) % plot_filter == 0)
     path = [tilemapbase.project(x,y) for x,y in zip(longs, lats)]
     x, y = zip(*path)
     # Plot stations as dots on the map
     ax.scatter(x,y, marker=".", color="black")
+    if trip_id is not None: 
+        for i, st in enumerate(stations_seq):
+            ax.annotate(st[0], (x[i], y[i]))
     # Show the plot
     plt.show()
 
@@ -371,20 +392,89 @@ def get_some_items(d):
         res.append({k:d[k]})
     return res
 
-def main():
-    gtfs_folder = "../is_gtfs"
-    gtfs = GTFS(gtfs_folder)
+def get_is_gtfs(reparse=False):
+    if os.path.isfile(IS_GTFS_OBJ) and not reparse:
+        print_log("loading gtfs from file...")
+        return load_gtfs_instance(IS_GTFS_OBJ)
+    else:
+        print_log("parsing gtfs from folder...")
+        gtfs = GTFS(IS_GTFS_FOLDER)
+        save_gtfs_instance(gtfs, IS_GTFS_OBJ)
+        return gtfs
+
+def get_is_tlv_gtfs(reparse=False):
+    if os.path.isfile(TLV_GTFS_OBJ) and not reparse:
+        print_log("loading gtfs from file...")
+        return load_gtfs_instance(TLV_GTFS_OBJ)
+    else:
+        print_log("parsing reducing from is_gtfs...")
+        gtfs = get_is_gtfs()
+        rgtfs = reduce_gtfs(gtfs, *TEL_AVIV_AREA)
+        save_gtfs_instance(rgtfs, TLV_GTFS_OBJ)
+        return gtfs
+
+
+def reduce_gtfs(gtfs, min_lon, max_lon, min_lat, max_lat):
+    # Reduce gtfs to only include trips in a certain area.
+    # I do this to create a smaller set of data for which to tryout my algorithms
+    # I will do this by reducing the stops, and then remove trips which contains these stops
+    new_stops = {}
+    for stop in gtfs.stops.items():
+        if float(stop[1]["stop_lon"]) >= min_lon and float(stop[1]["stop_lon"]) <= max_lon and \
+            float(stop[1]["stop_lat"]) >= min_lat and float(stop[1]["stop_lat"]) <= max_lat:
+            new_stops[stop[0]] = stop[1]
+    new_trips = {}
+    new_stop_times = {}
+    for trip in gtfs.trips.keys():
+        keep_trip = True
+        for stop in gtfs.stop_times[trip]:
+            if stop["stop_id"] not in new_stops:
+                # TODO: maybe instead of deleting trips i can just delete the stops which are not in the area
+                keep_trip = False
+                break
+        if keep_trip:
+            new_trips[trip] = gtfs.trips[trip]
+            new_stop_times[trip] = gtfs.stop_times[trip]
+    
+    # change 3 segnificant parameters of gtfs
+    gtfs.stops = new_stops
+    gtfs.trips = new_trips
+    gtfs.stop_times = new_stop_times
+    return gtfs
+
+
+def test_is_gtfs_parser():
+    print(f"[+] running from cwd: {os.getcwd()}")
+    time1 = time.time()
+    gtfs = get_is_gtfs()
+    time2 = time.time()
+    print("finished loading gtfs in {} seconds".format(time2 - time1))
     error_log_to_file("test this!")
     print_log("num of trips - ", len(gtfs.trips))
-    print("agencies: ", get_some_items(gtfs.agencies))
-    print("stops: ", get_some_items(gtfs.stops))
-    print("routes: ", get_some_items(gtfs.routes))
-    print("calendar: ", get_some_items(gtfs.calendar))
-    print("shapes: ", get_some_items(gtfs.shapes))
-    print("trips: ", get_some_items(gtfs.trips))
+    # print("agencies: ", get_some_items(gtfs.agencies))
+    # print("stops: ", get_some_items(gtfs.stops))
+    # print("routes: ", get_some_items(gtfs.routes))
+    # print("calendar: ", get_some_items(gtfs.calendar))
+    # print("shapes: ", get_some_items(gtfs.shapes))
+    # print("trips: ", get_some_items(gtfs.trips))
     display_stations(gtfs, 0.5)
+    
+    # display_stations(gtfs, 1, "17076498_090223")
     # display_stations(gtfs, 1)
 
+def test_is_tlv_gtfs_parser():
+
+    print(f"[+] running from cwd: {os.getcwd()}")    
+    time1 = time.time()
+    gtfs = get_is_tlv_gtfs()
+    time2 = time.time()
+    print("finished loading tlv gtfs in {} seconds".format(time2 - time1))
+    error_log_to_file("test this!")
+    print_log("num of trips - ", len(gtfs.trips))
+    display_stations(gtfs, 0.5)
+
+def main():
+    test_is_tlv_gtfs_parser()
 
 if __name__ == '__main__':
     main()
