@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import tilemapbase
 import time
 
-from display import display_gtfs_stations, display_gtfs_stations_for_trip, display_gtfs_trip
+from display import display_gtfs_stations, display_gtfs_stations_for_trip, display_gtfs_trip, display_gtfs_trip_shapes
 
 from utils import *
 
@@ -194,8 +194,9 @@ class GTFS:
                         raise ValueError("service_id {} not found in calendar".format(t["service_id"]))
                     if t["route_id"] not in self.routes:
                         raise ValueError("route_id {} not found in routes".format(t["route_id"]))
-                    if t["shape_id"] not in self.shapes:
-                        raise ValueError("shape_id {} not found in shapes".format(t["shape_id"]))
+                    # Ignore invalid shapes, later when attributing shapes to stops, we will create a shape from the stops
+                    # if t["shape_id"] not in self.shapes:
+                    #     raise ValueError("shape_id {} not found in shapes".format(t["shape_id"]))
 
                 except ValueError as e:
                     # print("got exception on trip - ", t, i)
@@ -213,6 +214,78 @@ class GTFS:
             print_log(f"got {len(bad_trips)} bad trips out of {len(trips)} trips")
         
         return trips
+
+    def _search_matching_shape(self, stop, shapes):
+        station = self.stations[stop["station_id"]]
+        minimal_distance = -1
+        min_shape_seq = -1
+        for i, shape in enumerate(shapes):
+            stop_p = (float(station["stop_lat"]), float(station["stop_lon"]))
+            shape_p = (float(shape["shape_pt_lat"]), float(shape["shape_pt_lon"]))
+            d = distance(stop_p, shape_p)
+            if minimal_distance == -1 or d < minimal_distance:
+                minimal_distance = d
+                min_shape_seq = i
+        stop["closest_shape_seq"] = min_shape_seq
+        return min_shape_seq
+    
+    def _quick_shape_stops_match(self, stops, shapes):
+        # Exit condition
+        if(len(stops) == 1):
+            self._search_matching_shape(stops, shapes)
+        # search middle stop
+        middle_index = len(stops) // 2
+        middle_stop = stops[middle_index]
+        middle_shape_index = self._search_matching_shape(middle_stop, shapes)
+
+
+        # recursivly call this function on the left and right sides of the middle stop
+        left_stops = stops[:middle_index]
+        left_shapes = shapes[:middle_shape_index]
+        if left_stops != []:
+            self._quick_shape_stops_match(left_stops, left_shapes)
+        right_stops = stops[middle_index+1:]
+        right_shapes = shapes[middle_shape_index+1:]
+        if right_stops != []:
+            self._quick_shape_stops_match(right_stops, right_shapes)
+            
+
+
+        #    i = 1
+        #     prev_stop = stop_list[0]
+        #     prev_shape_sequence = 0 # Always attribtue the first shape to the first station in the trip. 
+        #     for stop in stop_list[1:-1]:
+        #         found = False
+        #         minimal_distance = -1
+        #         min_shape_seq = None
+        #         # We will implement a fast binary-like search.
+        #         # We know That if a shape belongs to the middle stop, then previous stops must belong to previous shapes.
+        #         # This way we can always search for the middle stop first, and then split the stops and shape list into smaller bits, so that the search will be much faser.
+
+        #         for i in range(prev_shape_sequence, len(trip_shapes)-1):
+        #             # Do triangulation - if this shape is closer to the stop then the previous shape, and the nex shape is further away, 
+        #             # then this spahe represents the station. 
+
+        #             station = self.stations[stop["station_id"]]
+        #             stop_p = (float(station["stop_lat"]), float(station["stop_lon"]))
+        #             shape_p = (float(trip_shapes[i]["shape_pt_lat"]), float(trip_shapes[i]["shape_pt_lon"]))
+        #             d = distance(stop_p, shape_p)
+        #             if minimal_distance == -1 or d < minimal_distance:
+        #                 minimal_distance = d
+        #                 min_shape_seq = i
+        #                 found = True
+                
+        #         if minimal_distance == -1 or (prev_shape_sequence == len(trip_shapes)-1 and found == False):
+        #             self.stop_times = stop_times
+        #             display_gtfs_trip_shapes(self, trip_id)
+
+        #             error_log_to_file(f"Got stop without shape! {trip_id}, {stop}")
+        #             raise ValueError("Got stop without shape!  {}, {}".format(
+        #                         trip_id,stop)) 
+                
+        #         prev_stop["shape"] = trip_shapes[prev_shape_sequence:min_shape_seq]
+        #         prev_shape_sequence = min_shape_seq
+        #         prev_stop = stop
 
 
     def _parse_stop_times(self):
@@ -308,6 +381,78 @@ class GTFS:
             # I see that i get some trips without headsigns, which screws me, because then shape_id is shifted one left.
             # Or alternativly, there is no shape_id and the headsign is a number, which is wired. 
             print_log(f"got {len(bad_stop_times)} bad stop_times out of {len(bad_stop_times) + len(stop_times)} stop_times")
+        
+        # Devide trip shapes between stop time - each stop will hold the shape of points from this station to the next station in the trip
+        for j, (trip_id, stop_list) in enumerate(stop_times.items()):
+            #44779
+            if j % 100 == 0:
+                print_log("done {} shape matches...".format(j))
+            shape_id = self.trips[trip_id]["shape_id"]
+            if shape_id not in self.shapes:
+                # if no shape specified, create shape from stations 
+                trip_stations = [self.stations[st["station_id"]] for st in stop_list]
+                trip_shapes = [{"shape_pt_lat" : station["stop_lat"], "shape_pt_lon" : station["stop_lon"]} for station in trip_stations]
+            else:
+                trip_shapes = self.shapes[shape_id]
+            # for each stop, find the shape which is closest to this. 
+            i = 1
+            prev_stop = stop_list[0]
+            prev_shape_sequence = 0 # Always attribtue the first shape to the first station in the trip. 
+            for stop in stop_list[1:-1]:
+                found = False
+                minimal_distance = -1
+                min_shape_seq = None
+                # We will implement a fast binary-like search.
+                # We know That if a shape belongs to the middle stop, then previous stops must belong to previous shapes.
+                # This way we can always search for the middle stop first, and then split the stops and shape list into smaller bits, so that the search will be much faser.
+
+                for i in range(prev_shape_sequence, len(trip_shapes)-1):
+                    # Do triangulation - if this shape is closer to the stop then the previous shape, and the nex shape is further away, 
+                    # then this spahe represents the station. 
+
+                    station = self.stations[stop["station_id"]]
+                    stop_p = (float(station["stop_lat"]), float(station["stop_lon"]))
+                    shape_p = (float(trip_shapes[i]["shape_pt_lat"]), float(trip_shapes[i]["shape_pt_lon"]))
+                    d = distance(stop_p, shape_p)
+                    if minimal_distance == -1 or d < minimal_distance:
+                        minimal_distance = d
+                        min_shape_seq = i
+                        found = True
+                
+                if minimal_distance == -1 or (prev_shape_sequence == len(trip_shapes)-1 and found == False):
+                    self.stop_times = stop_times
+                    display_gtfs_trip_shapes(self, trip_id)
+
+                    error_log_to_file(f"Got stop without shape! {trip_id}, {stop}")
+                    raise ValueError("Got stop without shape!  {}, {}".format(
+                                trip_id,stop)) 
+                
+                prev_stop["shape"] = trip_shapes[prev_shape_sequence:min_shape_seq]
+                prev_shape_sequence = min_shape_seq
+                prev_stop = stop
+                    # Triangulation is not good enough, if i have curves i might get screwed...
+                    # I think i need for each station to find the closest shape point to it, and just leave it at that.
+                    # prev_shape_p = (float(trip_shapes[i-1]["shape_pt_lat"]), float(trip_shapes[i-1]["shape_pt_lon"]))
+                    # next_shape_p = (float(trip_shapes[i+1]["shape_pt_lat"]), float(trip_shapes[i+1]["shape_pt_lon"]))
+                 
+                    #  
+                    # if distance(stop_p, prev_shape_p) > distance(stop_p, shape_p) < distance(stop_p, next_shape_p):
+                    #     # Assign to previous points all points up to this one.
+                    #     prev_stop["shape"] = trip_shapes[prev_shape_sequence:i]
+                    #     prev_shape_sequence = i
+                    #     prev_stop = stop
+                    #     found = True
+                    #     i += 1
+                    #     break
+                    # i += 1
+                
+                # If this we stopped because we reached the end and the one before final stop didn't have any shapes, this is a mistake
+              
+            # Attribute last shape to last stop.
+            prev_stop["shape"] = trip_shapes[prev_shape_sequence:]
+            stop_list[-1]["shape"] = [] # Last stop has no shapes to it. 
+
+
         return stop_times
 
 
@@ -406,7 +551,7 @@ def reduce_gtfs(gtfs, min_lon, max_lon, min_lat, max_lat):
 def test_is_gtfs_parser():
     print(f"[+] running from cwd: {os.getcwd()}")
     time1 = time.time()
-    gtfs = get_is_gtfs()
+    gtfs = get_is_gtfs(reparse=True)
     time2 = time.time()
     print("finished loading gtfs in {} seconds".format(time2 - time1))
     error_log_to_file("test this!")
@@ -420,7 +565,7 @@ def test_is_gtfs_parser():
     # display_gtfs_stations(gtfs, 0.5)
     # display_gtfs_stations(gtfs, 0.5)
     
-    display_gtfs_stations_for_trip(gtfs,"17076498_090223")
+    # display_gtfs_stations_for_trip(gtfs,"17076498_090223")
     display_gtfs_trip(gtfs, "17076498_090223")
     # display_stations(gtfs, 1)
 
@@ -439,8 +584,8 @@ def test_is_tlv_gtfs_parser():
     display_gtfs_trip(gtfs, some_trip_id)
 
 def main():
-    test_is_tlv_gtfs_parser()
-    #test_is_gtfs_parser()
+    # test_is_tlv_gtfs_parser()
+    test_is_gtfs_parser()
 if __name__ == '__main__':
     main()
     #display_stations(None)

@@ -35,7 +35,8 @@ def save_artifact(obj, filename) -> None:
 def load_artifact(filename) -> None:
     return pickle.load(open(filename, 'rb'))
 
-
+def distance(p1, p2):
+    return ((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)**0.5
 
 def time_text_to_int(time_text):
     h, m, s = time_text.split(":")

@@ -9,6 +9,10 @@ def get_stations_area(stations):
     area = (float(min_lon["stop_lon"]), float(max_lon["stop_lon"]), float(min_lat["stop_lat"]), float(max_lat["stop_lat"])) 
     return area
 
+def get_cmap(n, name='hsv'):
+    '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
+    RGB color; the keyword argument name must be a standard mpl colormap name.'''
+    return plt.cm.get_cmap(name, n)
 
 def initiate_plotter(area):
     """
@@ -92,6 +96,62 @@ def display_gtfs_trip(gtfs_instance, trip_id):
     
     plotter, ax = initiate_plotter(area)
     # display stations that are on trip 58849630_170223
+    print("display_gtfs_trip")
+    print(stations_seq)
+
+    longs = (float(s[1]["stop_lon"]) for s in stations_seq)
+    lats = (float(s[1]["stop_lat"]) for s in stations_seq)
+
+    path = [tilemapbase.project(x,y) for x,y in zip(longs, lats)]
+    x, y = zip(*path)
+    # Plot stations as dots on the map
+    ax.scatter(x,y, marker=".", color="black")
+    for i, st in enumerate(stations_seq):
+        ax.annotate(st[0], (x[i], y[i]))
+    
+    # Now plot the shape of the trip
+    # trip_shapes = gtfs_instance.shapes[gtfs_instance.trips[trip_id]["shape_id"]]
+    
+    # for each stop, plot the shape from it to the next stop in a different color
+    for i, stop in enumerate(gtfs_instance.stop_times[trip_id]):
+        if stop["shapes"] == []:
+            continue
+        shape_longs = (float(s["shape_pt_lon"]) for s in stop["shapes"])
+        shape_lats = (float(s["shape_pt_lat"]) for s in stop["shapes"])
+        shapes_path = [tilemapbase.project(x,y) for x,y in zip(shape_longs, shape_lats)]
+        shapes_x, shapes_y = zip(*shapes_path)
+        # connect each shape point to the next one with a line
+        # plot with x and y data
+        ax.plot(shapes_x, shapes_y, get_cmap(i))
+
+    # shape_longs = (float(s["shape_pt_lon"]) for s in trip_shapes)
+    # shape_lats = (float(s["shape_pt_lat"]) for s in trip_shapes)
+    # shapes_path = [tilemapbase.project(x,y) for x,y in zip(shape_longs, shape_lats)]
+    # shapes_x, shapes_y = zip(*shapes_path)
+    # # connect each shape point to the next one with a line
+    # # plot with x and y data
+    # ax.plot(shapes_x, shapes_y)
+    # # for i in range(len(shapes_x)-1):
+    #     ax.annotate("", xy=(shapes_x[i+1], shapes_y[i+1]), xytext=(shapes_x[i], shapes_y[i]), arrowprops=dict(arrowstyle="->", color="red"))
+
+    #ax.scatter(shapes_x,shapes_y, marker=".", color="red")
+
+    # Show the plot
+    plt.show()
+
+
+def display_gtfs_trip_shapes(gtfs_instance, trip_id):
+    """
+    Display the stops on a map using tilemapbase
+    Display the shape of the trip
+    @gtfs_instance - an instance of GTFS class
+    @plot_chance - the chance to plot a station. 1 means plot all stations, 2 means plot every second station, etc.
+    """
+    stations_seq = gtfs_instance.get_trip_stations(trip_id)
+    area = get_stations_area([s[1] for s in stations_seq])
+    
+    plotter, ax = initiate_plotter(area)
+    # display stations that are on trip 58849630_170223
     print("got specific stations for trip")
     print(stations_seq)
 
@@ -107,24 +167,20 @@ def display_gtfs_trip(gtfs_instance, trip_id):
     
     # Now plot the shape of the trip
     trip_shapes = gtfs_instance.shapes[gtfs_instance.trips[trip_id]["shape_id"]]
-    
     shape_longs = (float(s["shape_pt_lon"]) for s in trip_shapes)
     shape_lats = (float(s["shape_pt_lat"]) for s in trip_shapes)
     shapes_path = [tilemapbase.project(x,y) for x,y in zip(shape_longs, shape_lats)]
     shapes_x, shapes_y = zip(*shapes_path)
     # connect each shape point to the next one with a line
     # plot with x and y data
-    ax.plot(shapes_x, shapes_y)
-    # for i in range(len(shapes_x)-1):
-    #     ax.annotate("", xy=(shapes_x[i+1], shapes_y[i+1]), xytext=(shapes_x[i], shapes_y[i]), arrowprops=dict(arrowstyle="->", color="red"))
-
-    #ax.scatter(shapes_x,shapes_y, marker=".", color="red")
-
-    # Show the plot
+    # ax.plot(shapes_x, shapes_y)
+    ax.scatter(shapes_x,shapes_y, marker=".", color="red")
+    for i, st in enumerate(trip_shapes):
+        ax.annotate(trip_shapes[i]["shape_pt_sequence"], (shapes_x[i], shapes_y[i]))
+    
     plt.show()
 
-
-def display_connections(connections):
+def display_connections(timetable, connections):
     # Display a route on a map using tilemapbase
     
     # Get area of the route to display
@@ -147,6 +203,17 @@ def display_connections(connections):
     ax.scatter(x,y, marker=".", color="black")
     for i, st in enumerate(stops):
         ax.annotate(st[0], (x[i], y[i]))
+
+    # Now plot the shape of the trip
+    trip_shapes = timetable.shapes[timetable.trips[trip_id]["shape_id"]]
+    
+    shape_longs = (float(s["shape_pt_lon"]) for s in trip_shapes)
+    shape_lats = (float(s["shape_pt_lat"]) for s in trip_shapes)
+    shapes_path = [tilemapbase.project(x,y) for x,y in zip(shape_longs, shape_lats)]
+    shapes_x, shapes_y = zip(*shapes_path)
+    # connect each shape point to the next one with a line
+    # plot with x and y data
+    ax.plot(shapes_x, shapes_y)
 
     # Next - plot arrows between the stations
     for i in range(len(x)-1):
