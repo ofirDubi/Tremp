@@ -14,12 +14,13 @@ TLV_TIMETABLE_OBJ = os.path.join(ARTIFACTS_FOLDER, "tlv_timetable_obj.obj")
 # - arrival time
 # - trip id (trip is a sequence of connections)
 class Connection(object):
-    def __init__(self, departure_stop, arrival_stop, departure_time, arrival_time, trip_id):
+    def __init__(self, departure_stop, arrival_stop, departure_time, arrival_time, trip_id, shapes):
         self.departure_stop = departure_stop
         self.arrival_stop = arrival_stop
         self.departure_time = departure_time
         self.arrival_time = arrival_time
         self.trip_id = trip_id
+        self.shapes = shapes # this is used to represent the connection on a map. 
     def __repr__(self):
         return f"Connection({self.departure_stop}, {self.arrival_stop}, {self.departure_time}, {self.arrival_time}, {self.trip_id})"
 
@@ -45,6 +46,9 @@ class Timetable(object):
             prev_stop = trip_stops[0]
             for stop in trip_stops[1:]:
                 # At this point we count on trip_stops to be sorted by stop_sequence and departure time.
+                # Get the set of shapes that represent this connection
+                
+
                 connection = Connection(prev_stop["stop_id"], stop["stop_id"], prev_stop["departure_time"], stop["arrival_time"], trip_id)
                 # Add connection to the previous stop.
                 if prev_stop["stop_id"] not in self.stop_connections:
