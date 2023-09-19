@@ -32,13 +32,13 @@ class Timetable(object):
         self.stop_connections = {}
         self.trip_connections = {}
 
-        # Just copy stops and trips from gtfs
-        self.stations = gtfs.stops
+        # Just copy stations and trips from gtfs
+        self.stations = gtfs.stations
         self.trips = gtfs.trips
         self.build_timetable(gtfs)
 
     def build_timetable(self, gtfs):
-        # A connection is besically two following stops, so each pair of stops will be a connection.
+        # A connection is besically two following stations, so each pair of stops will be a connection.
         # Pretty easy.
         # First i will make the connections, then i will attribute them to the stops 
         for trip_id, trip_stops in gtfs.stop_times.items():
@@ -74,20 +74,24 @@ class Timetable(object):
         # Return all following trips
         return trip_connections[connection_index:]
 
-def get_tlv_timetable(reparse=False):
+def get_tlv_timetable(reparse=False, full_reparse=False):
     if os.path.isfile(TLV_TIMETABLE_OBJ) and not reparse:
         print_log("loading tlv timetable from file...")
         return load_artifact(TLV_TIMETABLE_OBJ)
     else:
         print_log("parsing tlv timetable from gtfs...")
-        gtfs = get_is_tlv_gtfs()
+        if(full_reparse):
+            gtfs = get_is_tlv_gtfs(full_reparse, full_reparse)
+        else:
+            gtfs = get_is_tlv_gtfs()
         tt = Timetable(gtfs)
         save_artifact(tt, TLV_TIMETABLE_OBJ)
         return tt
 
 
 def test_tlv_timetable():
-    tt = get_tlv_timetable()
+    # tt = get_tlv_timetable()
+    tt = get_tlv_timetable(True, True)
     some_stop_connections =  get_some_items(tt.stop_connections)
     some_trip_connections = get_some_items(tt.trip_connections)
     print("stop connections - ",some_stop_connections[:3])
