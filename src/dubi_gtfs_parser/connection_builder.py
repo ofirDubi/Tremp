@@ -1,5 +1,6 @@
 from parse_gtfs import get_is_gtfs, get_is_tlv_gtfs, GTFS
 from utils import ARTIFACTS_FOLDER, get_some_items, print_log, error_log_to_file, load_artifact, save_artifact
+from display import display_connections
 import os
 
 IS_GTFS_FOLDER = "../is_gtfs"
@@ -32,7 +33,7 @@ class Timetable(object):
         self.trip_connections = {}
 
         # Just copy stops and trips from gtfs
-        self.stops = gtfs.stops
+        self.stations = gtfs.stops
         self.trips = gtfs.trips
         self.build_timetable(gtfs)
 
@@ -94,6 +95,7 @@ def test_tlv_timetable():
 
     following_trip = tt.follow_trip(list(some_stop_connections[0].values())[0][0])
     print("following trip - ", following_trip)
+    display_connections(following_trip)
 
 def main():
     test_tlv_timetable()

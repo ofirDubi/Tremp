@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import tilemapbase
 import time
 
+from display import display_gtfs_stations, display_gtfs_stations_for_trip
+
 from utils import *
 
 VALIDATE = True
@@ -110,9 +112,6 @@ class GTFS:
             self.fare_rules = self._parse_fare_rules()
             self.translations = self._parse_translations()
     
-
-    def load():
-        pass
         # populate everything
     def _parse_agencies(self):
         agensies_path = os.path.join(self.folder_path, "agency.txt")
@@ -319,6 +318,10 @@ class GTFS:
         parser = CSVParser(curr_path)
         translations = parser.parse(id_tag="trans_id")
         return translations
+    
+    def get_trip_stations(self, trip_id):
+        return [(trip_stop["stop_sequence"], self.stops[trip_stop["stop_id"]]) for trip_stop in self.stop_times[trip_id]]
+    
 
     def generate_connections():
         # iterate stop_times and create connections
@@ -327,58 +330,6 @@ class GTFS:
 # I think i want a timetable - which is a list of stations, each station has some metadata(like name, id, location, etc)
 # And a list of connections/trips which runs through the stations.
 
-
-def get_trip_stations(gtfs_instance, trip_id):
-    return [(trip_stop["stop_sequence"], gtfs_instance.stops[trip_stop["stop_id"]]) for trip_stop in gtfs_instance.stop_times[trip_id]]
-    
-
-# def display_stations_from_timetable(gtfs_instance, plot_chance=1, trip_id=None):
-
-def display_stations_from_gtfs(gtfs_instance, plot_chance=1, trip_id=None):
-    """
-    Display the stations on a map using tilemapbase
-    @gtfs_instance - an instance of GTFS class
-    @plot_chance - the chance to plot a station. 1 means plot all stations, 2 means plot every second station, etc.
-    """
-    tilemapbase.start_logging()
-    tilemapbase.init(create=True)
-    t = tilemapbase.tiles.build_OSM()
-
-    # print(*gtfs_instance.area)
-    extent = tilemapbase.Extent.from_lonlat(*gtfs_instance.area)
-    # my_neightborhood =(34.8224, 34.8486, 32.1001, 32.1331)
-    # extent = tilemapbase.Extent.from_lonlat(*my_neightborhood)
-    extent = extent.to_aspect(1.0)
-
-    # On my desktop, DPI gets scaled by 0.75 
-    fig, ax = plt.subplots(figsize=(8, 8), dpi=100)
-    ax.xaxis.set_visible(False)
-    ax.yaxis.set_visible(False)
-
-    plotter = tilemapbase.Plotter(extent, t, width=600)
-    plotter.plot(ax, t)
-    if trip_id is not None:    
-        # display stations that are on trip 58849630_170223
-        stations_seq = get_trip_stations(gtfs_instance, trip_id)
-        print("got specific stations for trip")
-        print(stations_seq)
-
-        longs = (float(s[1]["stop_lon"]) for s in stations_seq)
-        lats = (float(s[1]["stop_lat"]) for s in stations_seq)
-
-    else:
-        plot_filter = 1//plot_chance
-        longs = (float(s["stop_lon"]) for s in gtfs_instance.stops.values() if int(s["stop_id"]) % plot_filter == 0)
-        lats = (float(s["stop_lat"]) for s in gtfs_instance.stops.values() if int(s["stop_id"]) % plot_filter == 0)
-    path = [tilemapbase.project(x,y) for x,y in zip(longs, lats)]
-    x, y = zip(*path)
-    # Plot stations as dots on the map
-    ax.scatter(x,y, marker=".", color="black")
-    if trip_id is not None: 
-        for i, st in enumerate(stations_seq):
-            ax.annotate(st[0], (x[i], y[i]))
-    # Show the plot
-    plt.show()
 
 
 def get_is_gtfs(reparse=False):
@@ -446,9 +397,9 @@ def test_is_gtfs_parser():
     # print("calendar: ", get_some_items(gtfs.calendar))
     # print("shapes: ", get_some_items(gtfs.shapes))
     # print("trips: ", get_some_items(gtfs.trips))
-    display_stations(gtfs, 0.5)
+    display_gtfs_stations(gtfs, 0.5)
     
-    # display_stations(gtfs, 1, "17076498_090223")
+    # display_gtfs_stations_for_trip(gtfs, 1, "17076498_090223")
     # display_stations(gtfs, 1)
 
 def test_is_tlv_gtfs_parser():
@@ -460,7 +411,7 @@ def test_is_tlv_gtfs_parser():
     print("finished loading tlv gtfs in {} seconds".format(time2 - time1))
     error_log_to_file("test this!")
     print_log("num of trips - ", len(gtfs.trips))
-    display_stations(gtfs, 0.5)
+    display_gtfs_stations(gtfs, 0.5)
 
 def main():
     test_is_tlv_gtfs_parser()
