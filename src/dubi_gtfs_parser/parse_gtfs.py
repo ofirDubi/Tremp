@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import tilemapbase
 import time
 
-from display import display_gtfs_stations, display_gtfs_stations_for_trip
+from display import display_gtfs_stations, display_gtfs_stations_for_trip, display_gtfs_trip
 
 from utils import *
 
@@ -60,7 +60,7 @@ class GTFS:
     
     @calendar - a list of service options {'service_id': '1', 'sunday': '1', 'monday': '1', 'tuesday': '1', 'wednesday': '1', 'thursday': '1', 'friday': '1', 'saturday': '0', 'start_date': '20230209', 'end_date': '20230311'}
     
-    @stops - a list of stops  {'stop_id': '1', 'stop_code': '38831', 'stop_name': "בי''ס בר לב/בן יהודה", 'stop_desc': 'רחוב: בן יהודה 74 עיר: כפר סבא רציף:  קומה: ',
+    @stations - a list of stations  {'stations': '1', 'stop_code': '38831', 'stop_name': "בי''ס בר לב/בן יהודה", 'stop_desc': 'רחוב: בן יהודה 74 עיר: כפר סבא רציף:  קומה: ',
       'stop_lat': '32.183985', 'stop_lon': '34.917554', 'location_type': '0', 'parent_station': '', 'zone_id': '38831'}
 
     @routes - a list of routes (bus line is a route) {'route_id': '1', 'agency_id': '25', 'route_short_name': '1', 'route_long_name': 'ת. רכבת יבנה מערב-יבנה<->ת. רכבת יבנה מזרח-יבנה-1#',
@@ -83,6 +83,9 @@ class GTFS:
     @trips - a list of trips, each trip is a sequence of connections.
         {'route_id': '68', 'service_id': '18668', 'trip_id': '4240_090223', 'trip_headsign': 'תל אביב יפו_תחנה מרכזית', 'direction_id': '0', 'shape_id': '128020'}
     
+    @stop_times - a list of stops for each trips.
+    trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type,shape_dist_traveled
+
     
         
     # Notes for future:
@@ -100,7 +103,7 @@ class GTFS:
         # Note - parsing order is important. 
         self.agencies = self._parse_agencies()
         self.calendar = self._parse_calendar()
-        self.stops = self._parse_stops()
+        self.stations = self._parse_stations()
         self.routes = self._parse_routes()
         self.shapes = self._parse_shapes()
         self.trips = self._parse_trips()
@@ -118,22 +121,29 @@ class GTFS:
         parser = CSVParser(agensies_path)
         return parser.parse(id_tag="agency_id")
         
-    def _parse_stops(self):
+    def _parse_stations(self):
         agensies_path = os.path.join(self.folder_path, "stops.txt")
         parser = CSVParser(agensies_path)
-        stops = parser.parse(id_tag="stop_id")
+        stations = parser.parse(id_tag="stop_id")
+        # in this unique situtation, i want to change the stop_id value to be stations id. 
+        # This is because GTFS naming conventions in confusing AF, So i decided that a stations represents the physical location of a station (with name, lon\lat, etc.),
+        # and a "stop" is a stop of a trip in a station (which contains arrival\departure time, etc.)
+        
+        for station in stations.values():
+            station["station_id"] = station["stop_id"]
+            del station["stop_id"]
 
         # Define area based on furthest stop
-        min_lon = min(stops.values(), key=lambda x: float(x["stop_lon"]))
-        max_lon = max(stops.values(), key=lambda x: float(x["stop_lon"]))
-        min_lat = min(stops.values(), key=lambda x: float(x["stop_lat"]))
-        max_lat = max(stops.values(), key=lambda x: float(x["stop_lat"]))
+        min_lon = min(stations.values(), key=lambda x: float(x["stop_lon"]))
+        max_lon = max(stations.values(), key=lambda x: float(x["stop_lon"]))
+        min_lat = min(stations.values(), key=lambda x: float(x["stop_lat"]))
+        max_lat = max(stations.values(), key=lambda x: float(x["stop_lat"]))
         # print("min_lon - ", min_lon)
         # print("max_lon - ", max_lon)
         # print("min_lat - ", min_lat)
         # print("max_lat - ", max_lat)
         self.area = (float(min_lon["stop_lon"]), float(max_lon["stop_lon"]), float(min_lat["stop_lat"]), float(max_lat["stop_lat"])) 
-        return stops
+        return stations
     
     def _parse_routes(self):
         curr_path = os.path.join(self.folder_path, "routes.txt")
@@ -184,9 +194,8 @@ class GTFS:
                         raise ValueError("service_id {} not found in calendar".format(t["service_id"]))
                     if t["route_id"] not in self.routes:
                         raise ValueError("route_id {} not found in routes".format(t["route_id"]))
-                    # We will allow this for now
-                    # if t["shape_id"] not in self.shapes:
-                    #     raise ValueError("shape_id {} not found in shapes".format(t["shape_id"]))
+                    if t["shape_id"] not in self.shapes:
+                        raise ValueError("shape_id {} not found in shapes".format(t["shape_id"]))
 
                 except ValueError as e:
                     # print("got exception on trip - ", t, i)
@@ -207,11 +216,19 @@ class GTFS:
 
 
     def _parse_stop_times(self):
-        # trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type,shape_dist_traveled
+        # trip_id,arrival_time,departure_time,stop_id(station_id),stop_sequence,pickup_type,drop_off_type,shape_dist_traveled
         curr_path = os.path.join(self.folder_path, "stop_times.txt")
         # Merge stop_times with by trips (and not by stations...?)
         parser = CSVParser(curr_path)
         stop_times = parser.parse(id_tag="trip_id", dup_ids_allowed=True)
+
+        # Rename stop_id to station_id
+        for trip_stops in stop_times.values():
+            for stop in trip_stops:
+                stop["station_id"] = stop["stop_id"]
+                del stop["stop_id"]
+
+
         # arrange stops by stop_sequence
         # for s in stop_times.keys():
         #     stop_times[s] = sorted(stop_times["s"]
@@ -234,8 +251,8 @@ class GTFS:
                     for st in sorted_st_list:
                         if st["trip_id"] not in self.trips:
                             raise ValueError("trip_id {} not found in trips".format(st["trip_id"]))
-                        if st["stop_id"] not in self.stops:
-                            raise ValueError("stop_id {} not found in routes".format(st["stop_id"]))
+                        if st["station_id"] not in self.stations:
+                            raise ValueError("station_id {} not found in routes".format(st["station_id"]))
                         if int(st["stop_sequence"]) < prev_sequence:
                             # TODO: this jumps alot, which means that this is not sorted in any way
                             # From an investigation i did, it seesm like the sequence is not right in 2 cases
@@ -253,7 +270,7 @@ class GTFS:
                             else:
                                 # After sequences are sorted out then several things might be bad
                                 # 1. The trip is visiting the same station twice
-                                if st["stop_id"] == prev_stop["stop_id"]:
+                                if st["station_id"] == prev_stop["station_id"]:
                                     log_to_file("identified same station twice")
                                     # swap arival\departure times...
                                     tmp_arrival = st["arrival_time"]
@@ -320,7 +337,7 @@ class GTFS:
         return translations
     
     def get_trip_stations(self, trip_id):
-        return [(trip_stop["stop_sequence"], self.stops[trip_stop["stop_id"]]) for trip_stop in self.stop_times[trip_id]]
+        return [(trip_stop["stop_sequence"], self.stations[trip_stop["station_id"]]) for trip_stop in self.stop_times[trip_id]]
     
 
     def generate_connections():
@@ -342,13 +359,16 @@ def get_is_gtfs(reparse=False):
         save_artifact(gtfs, IS_GTFS_OBJ)
         return gtfs
 
-def get_is_tlv_gtfs(reparse=False):
+def get_is_tlv_gtfs(reparse=False, full_reparse=False):
     if os.path.isfile(TLV_GTFS_OBJ) and not reparse:
         print_log("loading gtfs from file...")
         return load_artifact(TLV_GTFS_OBJ)
     else:
         print_log("parsing reducing from is_gtfs...")
-        gtfs = get_is_gtfs()
+        if full_reparse:
+            gtfs = get_is_gtfs(True)
+        else:
+            gtfs = get_is_gtfs()
         rgtfs = reduce_gtfs(gtfs, *TEL_AVIV_AREA)
         save_artifact(rgtfs, TLV_GTFS_OBJ)
         return gtfs
@@ -357,19 +377,19 @@ def get_is_tlv_gtfs(reparse=False):
 def reduce_gtfs(gtfs, min_lon, max_lon, min_lat, max_lat):
     # Reduce gtfs to only include trips in a certain area.
     # I do this to create a smaller set of data for which to tryout my algorithms
-    # I will do this by reducing the stops, and then remove trips which contains these stops
-    new_stops = {}
-    for stop in gtfs.stops.items():
+    # I will do this by reducing the stations, and then remove trips which contains these stations
+    new_stations = {}
+    for stop in gtfs.stations.items():
         if float(stop[1]["stop_lon"]) >= min_lon and float(stop[1]["stop_lon"]) <= max_lon and \
             float(stop[1]["stop_lat"]) >= min_lat and float(stop[1]["stop_lat"]) <= max_lat:
-            new_stops[stop[0]] = stop[1]
+            new_stations[stop[0]] = stop[1]
     new_trips = {}
     new_stop_times = {}
     for trip in gtfs.trips.keys():
         keep_trip = True
         for stop in gtfs.stop_times[trip]:
-            if stop["stop_id"] not in new_stops:
-                # TODO: maybe instead of deleting trips i can just delete the stops which are not in the area
+            if stop["station_id"] not in new_stations:
+                # TODO: maybe instead of deleting trips i can just delete the stations which are not in the area
                 keep_trip = False
                 break
         if keep_trip:
@@ -377,7 +397,7 @@ def reduce_gtfs(gtfs, min_lon, max_lon, min_lat, max_lat):
             new_stop_times[trip] = gtfs.stop_times[trip]
     
     # change 3 segnificant parameters of gtfs
-    gtfs.stops = new_stops
+    gtfs.stations = new_stations
     gtfs.trips = new_trips
     gtfs.stop_times = new_stop_times
     return gtfs
@@ -392,14 +412,16 @@ def test_is_gtfs_parser():
     error_log_to_file("test this!")
     print_log("num of trips - ", len(gtfs.trips))
     # print("agencies: ", get_some_items(gtfs.agencies))
-    # print("stops: ", get_some_items(gtfs.stops))
+    # print("stations: ", get_some_items(gtfs.stations))
     # print("routes: ", get_some_items(gtfs.routes))
     # print("calendar: ", get_some_items(gtfs.calendar))
     # print("shapes: ", get_some_items(gtfs.shapes))
     # print("trips: ", get_some_items(gtfs.trips))
-    display_gtfs_stations(gtfs, 0.5)
+    # display_gtfs_stations(gtfs, 0.5)
+    # display_gtfs_stations(gtfs, 0.5)
     
-    # display_gtfs_stations_for_trip(gtfs, 1, "17076498_090223")
+    display_gtfs_stations_for_trip(gtfs,"17076498_090223")
+    display_gtfs_trip(gtfs, "17076498_090223")
     # display_stations(gtfs, 1)
 
 def test_is_tlv_gtfs_parser():
@@ -411,11 +433,14 @@ def test_is_tlv_gtfs_parser():
     print("finished loading tlv gtfs in {} seconds".format(time2 - time1))
     error_log_to_file("test this!")
     print_log("num of trips - ", len(gtfs.trips))
-    display_gtfs_stations(gtfs, 0.5)
+    some_trip_id = list(gtfs.trips.keys())[0]   
+    print(f"showind trip id - {some_trip_id}")
+    # display_gtfs_stations_for_trip(gtfs, some_trip_id)
+    display_gtfs_trip(gtfs, some_trip_id)
 
 def main():
     test_is_tlv_gtfs_parser()
-
+    #test_is_gtfs_parser()
 if __name__ == '__main__':
     main()
     #display_stations(None)

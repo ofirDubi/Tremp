@@ -1,6 +1,13 @@
 import tilemapbase
 from matplotlib import pyplot as plt
 
+def get_stations_area(stations):
+    min_lon = min(stations, key=lambda x: float(x["stop_lon"]))
+    max_lon = max(stations, key=lambda x: float(x["stop_lon"]))
+    min_lat = min(stations, key=lambda x: float(x["stop_lat"]))
+    max_lat = max(stations, key=lambda x: float(x["stop_lat"]))
+    area = (float(min_lon["stop_lon"]), float(max_lon["stop_lon"]), float(min_lat["stop_lat"]), float(max_lat["stop_lat"])) 
+    return area
 
 
 def initiate_plotter(area):
@@ -11,11 +18,14 @@ def initiate_plotter(area):
     tilemapbase.init(create=True)
     t = tilemapbase.tiles.build_OSM()
 
-    # print(*gtfs_instance.area)
+    # increase area lat and lon alittle bit, to get nicer view.
+    area = (area[0] - 0.01, area[1] + 0.01, area[2] - 0.01, area[3] + 0.01)
+
     extent = tilemapbase.Extent.from_lonlat(*area)
     # my_neightborhood =(34.8224, 34.8486, 32.1001, 32.1331)
     # extent = tilemapbase.Extent.from_lonlat(*my_neightborhood)
-    extent = extent.to_aspect(1.0)
+    # Shrink=True fucks me up real good....
+    extent = extent.to_aspect(1.0, False)
 
     # On my desktop, DPI gets scaled by 0.75 
     fig, ax = plt.subplots(figsize=(8, 8), dpi=100)
@@ -34,8 +44,8 @@ def display_gtfs_stations(gtfs_instance, plot_chance=1):
     """
     plotter, ax = initiate_plotter(gtfs_instance.area)
     plot_filter = 1//plot_chance
-    longs = (float(s["stop_lon"]) for s in gtfs_instance.stops.values() if int(s["stop_id"]) % plot_filter == 0)
-    lats = (float(s["stop_lat"]) for s in gtfs_instance.stops.values() if int(s["stop_id"]) % plot_filter == 0)
+    longs = (float(s["stop_lon"]) for s in gtfs_instance.stops.values() if int(s["station_id"]) % plot_filter == 0)
+    lats = (float(s["stop_lat"]) for s in gtfs_instance.stops.values() if int(s["station_id"]) % plot_filter == 0)
     path = [tilemapbase.project(x,y) for x,y in zip(longs, lats)]
     x, y = zip(*path)
     # Plot stations as dots on the map
@@ -49,9 +59,11 @@ def display_gtfs_stations_for_trip(gtfs_instance, trip_id):
     @gtfs_instance - an instance of GTFS class
     @plot_chance - the chance to plot a station. 1 means plot all stations, 2 means plot every second station, etc.
     """
-    plotter, ax = initiate_plotter(gtfs_instance.area)
-    # display stations that are on trip 58849630_170223
     stations_seq = gtfs_instance.get_trip_stations(trip_id)
+
+    area = get_stations_area([s[1] for s in stations_seq])
+    plotter, ax = initiate_plotter(area)
+
     print("got specific stations for trip")
     print(stations_seq)
 
@@ -67,6 +79,51 @@ def display_gtfs_stations_for_trip(gtfs_instance, trip_id):
     # Show the plot
     plt.show()
 
+
+def display_gtfs_trip(gtfs_instance, trip_id):
+    """
+    Display the stops on a map using tilemapbase
+    Display the shape of the trip
+    @gtfs_instance - an instance of GTFS class
+    @plot_chance - the chance to plot a station. 1 means plot all stations, 2 means plot every second station, etc.
+    """
+    stations_seq = gtfs_instance.get_trip_stations(trip_id)
+    area = get_stations_area([s[1] for s in stations_seq])
+    
+    plotter, ax = initiate_plotter(area)
+    # display stations that are on trip 58849630_170223
+    print("got specific stations for trip")
+    print(stations_seq)
+
+    longs = (float(s[1]["stop_lon"]) for s in stations_seq)
+    lats = (float(s[1]["stop_lat"]) for s in stations_seq)
+
+    path = [tilemapbase.project(x,y) for x,y in zip(longs, lats)]
+    x, y = zip(*path)
+    # Plot stations as dots on the map
+    ax.scatter(x,y, marker=".", color="black")
+    for i, st in enumerate(stations_seq):
+        ax.annotate(st[0], (x[i], y[i]))
+    
+    # Now plot the shape of the trip
+    trip_shapes = gtfs_instance.shapes[gtfs_instance.trips[trip_id]["shape_id"]]
+    
+    shape_longs = (float(s["shape_pt_lon"]) for s in trip_shapes)
+    shape_lats = (float(s["shape_pt_lat"]) for s in trip_shapes)
+    shapes_path = [tilemapbase.project(x,y) for x,y in zip(shape_longs, shape_lats)]
+    shapes_x, shapes_y = zip(*shapes_path)
+    # connect each shape point to the next one with a line
+    # plot with x and y data
+    ax.plot(shapes_x, shapes_y)
+    # for i in range(len(shapes_x)-1):
+    #     ax.annotate("", xy=(shapes_x[i+1], shapes_y[i+1]), xytext=(shapes_x[i], shapes_y[i]), arrowprops=dict(arrowstyle="->", color="red"))
+
+    #ax.scatter(shapes_x,shapes_y, marker=".", color="red")
+
+    # Show the plot
+    plt.show()
+
+
 def display_connections(connections):
     # Display a route on a map using tilemapbase
     
@@ -74,12 +131,7 @@ def display_connections(connections):
     stops = [c.departure_stop for c in connections]
     # Also get last arrival stop
     stops.append(connections[-1].arrival_stop)
-    min_lon = min(stops, key=lambda x: float(x["stop_lon"]))
-    max_lon = max(stops, key=lambda x: float(x["stop_lon"]))
-    min_lat = min(stops, key=lambda x: float(x["stop_lat"]))
-    max_lat = max(stops, key=lambda x: float(x["stop_lat"]))
-   
-    area = (float(min_lon["stop_lon"]), float(max_lon["stop_lon"]), float(min_lat["stop_lat"]), float(max_lat["stop_lat"])) 
+    area = get_stations_area(stops)
     print(area)
 
     plotter, ax = initiate_plotter(area)
