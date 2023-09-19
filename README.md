@@ -119,5 +119,15 @@ After viewing some lectures about SOTA algorithms, i've decided on the following
 
 
 
+## 09/17/2023 
+* I got israels GTFS working and parsed, and done a reduction to TLV area, so it is easier to test.
+* I've built a timetable class, TODO: make sure it has everything we need for a raptor run.
+* TODO: i need to build some more visualisation framework, at list a way to show a trip with arrows and stuff, 
+    and maybe even show different trips with different colors. maybe just display connections, and connection color is derived from the trip.
+* Next TODO after this is to implement a simple RAPTOR to see that i can handle basic stuff. 
+* Then i need to decide if i tackle walking, or if i tackle adding a car as a route. 
+    Right now i'm leaning towards walking, at least the basic stuff, because without it nothing will be practical. 
+    GN
+
 # links
 https://www.youtube.com/watch?v=AdArDN4E6Hg&t=1s&ab_channel=DFG-FOR2083
