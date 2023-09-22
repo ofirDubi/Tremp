@@ -9,6 +9,7 @@ from utils import *
 
 VALIDATE = True
 COMPLETE_PARSE = False
+PREPROCESS_SHAPE_STOP_MATCHES = False
 
 IS_GTFS_FOLDER = "../is_gtfs"
 IS_GTFS_OBJ = os.path.join(ARTIFACTS_FOLDER, "is_gtfs_obj.obj")
@@ -225,6 +226,38 @@ class GTFS:
         
         return trips
 
+    def _search_circle_in_stops_or_shapes(self, stops, shapes):
+        stations = {}
+        found_circle = False
+        for i, stop in enumerate(stops):
+            if stop["station_id"] not in stations:
+                stations[stop["station_id"]] = i
+            else:
+                found_circle = True
+                break
+                # # Get the first apperecne of the stop
+                # first_cicrle_stop_idx = stations[stop["station_id"]]
+                # # I want to split the array with a station that is between the circles, so that i can then split the shapes 
+                # # in a way that prevents confusion between two identical stations.  
+                # # In order to get the best split, i will try to find the station that is closest to the middle of the stops array.
+                # if len(stops) // 2 >= i:
+                #     middle_index = i - 1 # Get one station before the last one of the circle
+                # elif  len(stops) // 2 <= stations[stop["station_id"]]:
+                #     middle_index = stations[stop["station_id"]] + 1
+                # else:
+                #     middle_index = len(stops) // 2                        
+                # middle_index =  first_cicrle_stop_idx+1
+        if found_circle:
+            return True
+        visited_shapes = {}
+        for i, shape in enumerate(shapes):
+            if (shape["shape_pt_lat"], shape["shape_pt_lon"]) not in visited_shapes:
+                visited_shapes[(shape["shape_pt_lat"], shape["shape_pt_lon"])] = i
+            else:
+                found_circle = True
+                break
+        return found_circle 
+    
     def _search_matching_shape(self, stop, shapes):
         station = self.stations[stop["station_id"]]
         minimal_distance = -1
@@ -243,7 +276,15 @@ class GTFS:
         stop["closest_shape_seq"] = min_shape["shape_pt_sequence"]
         return found_index
     
-    def _quick_shape_stops_match(self, stops, shapes):
+    def _shape_stops_match(self, stops, shapes):
+        # This is a simple-studip algorithm, O(n*m). 
+        # It is not as fast as the quick algorithm, but it works with circles...
+        current_shape_idx = 0
+        for stop in stops:
+            # Each time search for match only in the shapes which are after already attributed shapes. 
+            current_shape_idx = self._search_matching_shape(stop, shapes[current_shape_idx:])
+
+    def _quick_shape_stops_match(self, stops, shapes, possible_circle=True):
         ############
         # PROBLEM!!! - This will not work in case i have a "circle" in my path :(((
         # In case of a circle where the same station is visited twice, i will fail for sure....
@@ -255,15 +296,48 @@ class GTFS:
         # This way if the shape locations are accurate we will succedd.
         # I do need to consider what to do if we have 2 circles - do i need to check for it every iteration? that will be costly...
         # Maybe with circles i will just do the O(n^2) algorithm...
+
+        # Another possible way to deal with circles is to flaten them - if i find a circle in shapes, 
+        # Then for the first circle shape i find the closest station, then i split it into 2 different paths, might work but to much effort for this. 
         ###########
         
+        # This trip - '12180991_090223' broke the algorithm!
+        # It had 2 stations, on stop_seq 8 and 10, both of them had the same "closest point".
+        # Binary searching made it so we will search 10 first, even though it was an 8 shape... we screwed up then!
+
         # Exit condition
         if(len(stops) == 1):
             self._search_matching_shape(stops[0], shapes)
             return
         
+        found_circle = False
         # search middle stop
-        middle_index = len(stops) // 2
+        if possible_circle:
+            # If there is a possible circle, then iterate all of the stops and try to find a station that appears twice.
+            # If we find such station, then split the stops and shapes by this station.
+            stations = {}
+            for i, stop in enumerate(stops):
+                if stop["station_id"] not in stations:
+                    stations[stop["station_id"]] = i
+                else: 
+                    # Get the first apperecne of the stop
+                    first_cicrle_stop_idx = stations[stop["station_id"]]
+                    # I want to split the array with a station that is between the circles, so that i can then split the shapes 
+                    # in a way that prevents confusion between two identical stations.  
+                    # In order to get the best split, i will try to find the station that is closest to the middle of the stops array.
+                    if len(stops) // 2 >= i:
+                        middle_index = i - 1 # Get one station before the last one of the circle
+                    elif  len(stops) // 2 <= stations[stop["station_id"]]:
+                        middle_index = stations[stop["station_id"]] + 1
+                    else:
+                        middle_index = len(stops) // 2                        
+                    middle_index =  first_cicrle_stop_idx+1
+                    found_circle = True
+                    break
+
+        if not found_circle:
+            middle_index = len(stops) // 2
+
         middle_stop = stops[middle_index]
         middle_shape_index = self._search_matching_shape(middle_stop, shapes)
 
@@ -271,11 +345,12 @@ class GTFS:
         left_stops = stops[:middle_index]
         left_shapes = shapes[:middle_shape_index]
         if left_stops != []:
-            self._quick_shape_stops_match(left_stops, left_shapes)
+            # If there was no circle found in this round, then there are no more circles. 
+            self._quick_shape_stops_match(left_stops, left_shapes, found_circle)
         right_stops = stops[middle_index+1:]
         right_shapes = shapes[middle_shape_index+1:]
         if right_stops != []:
-            self._quick_shape_stops_match(right_stops, right_shapes)
+            self._quick_shape_stops_match(right_stops, right_shapes, found_circle)
         return  
 
         # Implement the above algorithm with a loop
@@ -321,6 +396,36 @@ class GTFS:
         #         prev_shape_sequence = min_shape_seq
         #         prev_stop = stop
 
+    def match_stops_to_shapes_for_trip(self, trip_id):
+        stop_list = self.stop_times[trip_id]
+        shape_id = self.trips[trip_id]["shape_id"]
+        if shape_id not in self.shapes:
+            # if no shape specified, create shape from stations 
+            trip_stations = [self.stations[st["station_id"]] for st in stop_list]
+            trip_shapes = [{"shape_pt_lat" : station["stop_lat"], "shape_pt_lon" : station["stop_lon"], "shape_pt_sequence" : i} \
+                        for i, station in enumerate(trip_stations)]
+        else:
+            trip_shapes = self.shapes[shape_id]
+        
+        # Set first and last stops manually -
+        stop_list[0]["closest_shape_seq"] = 0
+        stop_list[-1]["closest_shape_seq"] = len(trip_shapes) -1
+
+        # Match using slow algorithn, although there are only severl trips within 19,000 that break it, and that is because they are broken!
+        if len(stop_list) > 2:
+         self._shape_stops_match(stop_list, trip_shapes)
+
+        # if len(stop_list) > 2:
+        #     if self._search_circle_in_stops_or_shapes(stop_list, trip_shapes):
+        #         # If there are circles use bad paths
+        #         self._shape_stops_match(stop_list, trip_shapes)
+        #     else:
+        #         self._quick_shape_stops_match(stop_list[1:-1], trip_shapes)
+
+        # Construct shapes for each stop
+        for i in range(len(stop_list)-1):
+            stop_list[i]["shapes"] = trip_shapes[stop_list[i]["closest_shape_seq"] : stop_list[i+1]["closest_shape_seq"]]
+        stop_list[-1]["shapes"] = []
 
     def _parse_stop_times(self):
         # trip_id,arrival_time,departure_time,stop_id(station_id),stop_sequence,pickup_type,drop_off_type,shape_dist_traveled
@@ -416,92 +521,13 @@ class GTFS:
             # Or alternativly, there is no shape_id and the headsign is a number, which is wired. 
             print_log(f"got {len(bad_stop_times)} bad stop_times out of {len(bad_stop_times) + len(stop_times)} stop_times")
         
-        # Devide trip shapes between stop time - each stop will hold the shape of points from this station to the next station in the trip
-        for j, (trip_id, stop_list) in enumerate(stop_times.items()):
-            #44779
-            if j % 100 == 0:
-                print_log("done {} shape matches...".format(j))
-            shape_id = self.trips[trip_id]["shape_id"]
-            if shape_id not in self.shapes:
-                # if no shape specified, create shape from stations 
-                trip_stations = [self.stations[st["station_id"]] for st in stop_list]
-                trip_shapes = [{"shape_pt_lat" : station["stop_lat"], "shape_pt_lon" : station["stop_lon"], "shape_pt_sequence" : i} \
-                               for i, station in enumerate(trip_stations)]
-            else:
-                trip_shapes = self.shapes[shape_id]
-            
-            # Set first and last stops manually -
-            stop_list[0]["closest_shape_seq"] = 0
-            stop_list[-1]["closest_shape_seq"] = len(trip_shapes) -1
-
-            if len(stop_list) > 2:
-                self._quick_shape_stops_match(stop_list[1:-1], trip_shapes)
-
-            # Construct shapes for each stop
-            for i in range(len(stop_list)-1):
-                stop_list[i]["shapes"] = trip_shapes[stop_list[i]["closest_shape_seq"] : stop_list[i+1]["closest_shape_seq"]]
-            stop_list[-1]["shapes"] = []
-        #  self.stop_times = stop_times
-        #  display_gtfs_trip_shapes
-        #     # for each stop, find the shape which is closest to this. 
-        #     i = 1
-        #     prev_stop = stop_list[0]
-        #     prev_shape_sequence = 0 # Always attribtue the first shape to the first station in the trip. 
-        #     for stop in stop_list[1:-1]:
-        #         found = False
-        #         minimal_distance = -1
-        #         min_shape_seq = None
-        #         # We will implement a fast binary-like search.
-        #         # We know That if a shape belongs to the middle stop, then previous stops must belong to previous shapes.
-        #         # This way we can always search for the middle stop first, and then split the stops and shape list into smaller bits, so that the search will be much faser.
-
-        #         for i in range(prev_shape_sequence, len(trip_shapes)-1):
-        #             # Do triangulation - if this shape is closer to the stop then the previous shape, and the nex shape is further away, 
-        #             # then this spahe represents the station. 
-
-        #             station = self.stations[stop["station_id"]]
-        #             stop_p = (float(station["stop_lat"]), float(station["stop_lon"]))
-        #             shape_p = (float(trip_shapes[i]["shape_pt_lat"]), float(trip_shapes[i]["shape_pt_lon"]))
-        #             d = distance(stop_p, shape_p)
-        #             if minimal_distance == -1 or d < minimal_distance:
-        #                 minimal_distance = d
-        #                 min_shape_seq = i
-        #                 found = True
-                
-        #         if minimal_distance == -1 or (prev_shape_sequence == len(trip_shapes)-1 and found == False):
-        #             self.stop_times = stop_times
-        #             display_gtfs_trip_shapes(self, trip_id)
-
-        #             error_log_to_file(f"Got stop without shape! {trip_id}, {stop}")
-        #             raise ValueError("Got stop without shape!  {}, {}".format(
-        #                         trip_id,stop)) 
-                
-        #         prev_stop["shape"] = trip_shapes[prev_shape_sequence:min_shape_seq]
-        #         prev_shape_sequence = min_shape_seq
-        #         prev_stop = stop
-        #             # Triangulation is not good enough, if i have curves i might get screwed...
-        #             # I think i need for each station to find the closest shape point to it, and just leave it at that.
-        #             # prev_shape_p = (float(trip_shapes[i-1]["shape_pt_lat"]), float(trip_shapes[i-1]["shape_pt_lon"]))
-        #             # next_shape_p = (float(trip_shapes[i+1]["shape_pt_lat"]), float(trip_shapes[i+1]["shape_pt_lon"]))
-                 
-        #             #  
-        #             # if distance(stop_p, prev_shape_p) > distance(stop_p, shape_p) < distance(stop_p, next_shape_p):
-        #             #     # Assign to previous points all points up to this one.
-        #             #     prev_stop["shape"] = trip_shapes[prev_shape_sequence:i]
-        #             #     prev_shape_sequence = i
-        #             #     prev_stop = stop
-        #             #     found = True
-        #             #     i += 1
-        #             #     break
-        #             # i += 1
-                
-        #         # If this we stopped because we reached the end and the one before final stop didn't have any shapes, this is a mistake
-              
-        #     # Attribute last shape to last stop.
-        #     prev_stop["shape"] = trip_shapes[prev_shape_sequence:]
-        #     stop_list[-1]["shape"] = [] # Last stop has no shapes to it. 
-
-
+        if PREPROCESS_SHAPE_STOP_MATCHES:
+            # Devide trip shapes between stop time - each stop will hold the shape of points from this station to the next station in the trip
+            for j, trip_id in enumerate(stop_times.keys()):
+                #44779
+                if j % 100 == 0:
+                    print_log("done {} shape matches...".format(j))
+                self.match_stops_to_shapes_for_trip(trip_id)
         return stop_times
 
 
