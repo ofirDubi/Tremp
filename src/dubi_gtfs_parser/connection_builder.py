@@ -1,11 +1,119 @@
 from parse_gtfs import get_is_gtfs, get_is_tlv_gtfs, GTFS
-from utils import ARTIFACTS_FOLDER, get_some_items, print_log, error_log_to_file, load_artifact, save_artifact
-from display import display_connections
+from utils import ARTIFACTS_FOLDER, get_some_items, print_log, error_log_to_file, load_artifact, save_artifact, meters_to_degrees, BinarySearchIdx, degrees_to_meters, further_than_length
+from display import display_connections, display_all_gtfs_stations, display_stations
 import os
+import math
+from codetiming import Timer
 
 IS_GTFS_FOLDER = "../is_gtfs"
 TLV_TIMETABLE_OBJ = os.path.join(ARTIFACTS_FOLDER, "tlv_timetable_obj.obj")
 
+
+
+class SearchableStations(object):
+    # Right now stations are grouped by id. i want to craete a stations array sorted by X, so it is searchable.
+    # For maximum searchability, i will group each 100 meters of X into a bucket, which will later be sorted by Y value
+    # TODO: make some expiriments and see how different bucket size affects search time
+    # TODO: make this save sorted stations in a DB instead of in-memory (although paging is a thing, so maybe OS to the rescue?)
+    def __init__(self, stations, BUCKET_SIZE=100):
+        """
+        @stations - a list of stations, by id
+        @BUCEKT_SIZE - the size of each bucket in meters.
+        """
+        # self.stations = stations
+        self.BUCKET_SIZE = BUCKET_SIZE
+        self.sorted_stations = self._sort_stations(stations)
+
+    def _sort_stations(self, stations):
+        # Sort stations by X value, then group them into buckets of BUCKET_SIZE, then sort each bucket by Y value
+        sorted_stations_ungrouped = sorted(stations, key=lambda x: float(x["stop_lon"]))
+        sorted_stations = []
+        current_bucket_x = degrees_to_meters(sorted_stations_ungrouped[0]["stop_lon"]) -  (degrees_to_meters(sorted_stations_ungrouped[0]["stop_lon"]) % self.BUCKET_SIZE) 
+        current_bucket = [current_bucket_x]
+
+        for station in sorted_stations_ungrouped:
+
+            if degrees_to_meters(float(station["stop_lon"])) - current_bucket_x > self.BUCKET_SIZE:
+                # We are done with this bucket. Sort it and add it to the list
+                current_bucket = [current_bucket[0]] + sorted(current_bucket[1:], key=lambda x: float(x["stop_lat"]))
+                sorted_stations.append(current_bucket)
+                current_bucket_x = degrees_to_meters(float(station["stop_lon"])) - (degrees_to_meters(float(station["stop_lon"])) % self.BUCKET_SIZE)
+                current_bucket = [current_bucket_x]
+            else:
+                current_bucket.append(station)
+
+        # Add the last bucket
+        current_bucket = [current_bucket[0]] + sorted(current_bucket[1:], key=lambda x: float(x["stop_lat"]))
+        sorted_stations.append(current_bucket)
+        return sorted_stations
+
+    def search_nearby_stations(self, station, radius=1000):
+        """
+        @station - a station object
+        @radius - the radius in meters to search for stations
+        """
+        results = []
+        # Search for stations that are nearby the given station
+        target_location = (station["stop_lon"], station["stop_lat"])
+        target_location_meters = (degrees_to_meters(station["stop_lon"]),  degrees_to_meters(station["stop_lat"]))
+        # Search for stations in the same bucket
+        target_x = float(station["stop_lon"])
+        target_y = float(station["stop_lat"])
+
+        # sorted_stations is an array of buckets, each bucket's first element is the bucket lon in meters, following by a list of stations sorted by Y value
+        bucket_x_idx = BinarySearchIdx(self.sorted_stations, degrees_to_meters(target_x), key=lambda x: float(x[0]))
+
+        max_bucket_x_radius = math.ceil(radius / self.BUCKET_SIZE)
+        start_search_idx = bucket_x_idx - max_bucket_x_radius - 1
+        if start_search_idx < 0:
+            start_search_idx = 0
+        end_search_idx = bucket_x_idx + max_bucket_x_radius
+        if end_search_idx > len(self.sorted_stations):
+            end_search_idx = len(self.sorted_stations)
+
+        # Search for stations in the same bucket radius
+        for i, probable_stations in enumerate(self.sorted_stations[start_search_idx: end_search_idx]):
+            # Discard the first item, which is the bucket lon
+            probable_stations = probable_stations[1:]
+            # probable_stations are Y ordered.
+            # Search for stations in the same Y radius, Y is not stored in meters, but in degrees.
+            starting_y_idx = BinarySearchIdx(probable_stations, target_y, key=lambda x: float(x["stop_lat"]))
+            
+            # TODO - this can be more efficient - we can search for the first station that is further than radius, and then search backwards
+            # The only cavity here is that because of X variance we might be off by a BUCKET_SIZE.
+            # Honestly i can just say i'm okay to give an accurecy of BUCKET_SIZE, and that's it.
+            # For now iterate every station that is a possible match, the massive optimization should have been done by the X search 
+            # 33843, 14161, 48790
+            # Search up until i hit radius or higher 
+            current_y_idx = starting_y_idx
+            while current_y_idx < len(probable_stations):
+                current_target_station = probable_stations[current_y_idx]
+                current_target_location_meters = (degrees_to_meters(current_target_station["stop_lon"]),  degrees_to_meters(current_target_station["stop_lat"]))
+
+                # Note below - We added self.BUCKET_SIZE to the search in order to make sure we don't miss any stations
+                # Because Y sort does not garantee that the next station is closer to the target station, there is X variance of up to BUCEKT_SIZE
+                if further_than_length(target_location_meters, current_target_location_meters, radius+self.BUCKET_SIZE):
+                    break
+
+                results.append(current_target_station)
+                current_y_idx += 1
+            
+            # Search down until i hit radius or lower
+            if starting_y_idx == 0:
+                continue
+            current_target_station = probable_stations[starting_y_idx-1] 
+            current_target_location_meters = (degrees_to_meters(current_target_station["stop_lon"]),  degrees_to_meters(current_target_station["stop_lat"]))
+            current_y_idx = starting_y_idx-1
+            while current_y_idx >= 0:
+                current_target_station = probable_stations[current_y_idx]
+                current_target_location_meters = (degrees_to_meters(current_target_station["stop_lon"]),  degrees_to_meters(current_target_station["stop_lat"]))
+                if further_than_length(target_location_meters, current_target_location_meters, radius+self.BUCKET_SIZE):
+                    break
+                results.append(current_target_station)
+                current_y_idx -= 1
+              
+        
+        return results
 
 # What i need - a list of connection. a connection is a tuple of 5  elements:
 # - depatrue stop
@@ -14,29 +122,33 @@ TLV_TIMETABLE_OBJ = os.path.join(ARTIFACTS_FOLDER, "tlv_timetable_obj.obj")
 # - arrival time
 # - trip id (trip is a sequence of connections)
 class Connection(object):
-    def __init__(self, departure_stop, arrival_stop, departure_time, arrival_time, trip_id, shapes):
+    def __init__(self, departure_stop, arrival_stop, departure_time, arrival_time, trip_id):
         self.departure_stop = departure_stop
         self.arrival_stop = arrival_stop
         self.departure_time = departure_time
         self.arrival_time = arrival_time
         self.trip_id = trip_id
-        self.shapes = shapes # this is used to represent the connection on a map. 
+        self.shapes = None
+        # self.shapes = shapes # this is used to represent the connection on a map. 
     def __repr__(self):
         return f"Connection({self.departure_stop}, {self.arrival_stop}, {self.departure_time}, {self.arrival_time}, {self.trip_id})"
-
 
 class Timetable(object):
     # timetable is a list of connections, sorted by departure time
     # Each stop has a list of connections that depart from it, sorted by departure time
     def __init__(self, gtfs):
         # self.timetable = []
-        self.stop_connections = {}
+        self.station_connections = {}
         self.trip_connections = {}
 
         # Just copy stations and trips from gtfs
         self.stations = gtfs.stations
         self.trips = gtfs.trips
+        self.shapes = gtfs.shapes
+        self.gtfs_instance = gtfs
+        self.searchable_stations = SearchableStations(self.stations.values(),)
         self.build_timetable(gtfs)
+
 
     def build_timetable(self, gtfs):
         # A connection is besically two following stations, so each pair of stops will be a connection.
@@ -47,14 +159,12 @@ class Timetable(object):
             for stop in trip_stops[1:]:
                 # At this point we count on trip_stops to be sorted by stop_sequence and departure time.
                 # Get the set of shapes that represent this connection
-                
-
-                connection = Connection(prev_stop["stop_id"], stop["stop_id"], prev_stop["departure_time"], stop["arrival_time"], trip_id)
+                connection = Connection(prev_stop["station_id"], stop["station_id"], prev_stop["departure_time"], stop["arrival_time"], trip_id)
                 # Add connection to the previous stop.
-                if prev_stop["stop_id"] not in self.stop_connections:
-                    self.stop_connections[prev_stop["stop_id"]] = []
+                if prev_stop["station_id"] not in self.station_connections:
+                    self.station_connections[prev_stop["station_id"]] = []
                 
-                self.stop_connections[prev_stop["stop_id"]].append(connection)
+                self.station_connections[prev_stop["station_id"]].append(connection)
                 if trip_id not in self.trip_connections:
                     self.trip_connections[trip_id] = []
                 self.trip_connections[trip_id].append(connection)
@@ -63,20 +173,51 @@ class Timetable(object):
             connection = {}
         
         # For each stop, sort the connections by departure time
-        for stop_id in self.stops.keys():
-            if stop_id not in self.stop_connections:
+        for station_id in self.stations.keys():
+            if station_id not in self.station_connections:
                 continue
-            self.stop_connections[stop_id] = sorted(self.stop_connections[stop_id], key=lambda x: x.departure_time) 
-        print(f"got {len(self.stops)} stops, out of them {len(self.stop_connections)} with connections")
+            self.station_connections[station_id] = sorted(self.station_connections[station_id], key=lambda x: x.departure_time) 
+        print(f"got {len(self.stations)} stations, out of them {len(self.station_connections)} with connections")
 
-    def follow_trip(self, connection):
+    def follow_trip(self, connection, toConnection=False):
         # Receive a connection, and return a list of FOLLOWING connections that are in the same trip
         # The list will be sorted by departure time
         trip_connections = self.trip_connections[connection.trip_id]
         # Find where this connection is placed in the trip
+        # TODO: Change this to binary search
         connection_index = trip_connections.index(connection)
         # Return all following trips
-        return trip_connections[connection_index:]
+        if toConnection:
+            return trip_connections[:connection_index+1]
+        else:
+            return trip_connections[connection_index:]
+
+    def match_shapes_to_connections(self, connections):
+        # Assume all connections are from the same trip here. 
+        trip_id = connections[0].trip_id
+        stop_times = self.gtfs_instance.match_stops_to_shapes_for_trip(trip_id)
+        # match stop_time to connection by station
+        connections_by_station = {}
+        for c in connections:
+            if c.departure_stop not in connections_by_station:
+                connections_by_station[c.departure_stop] = [c]
+            connections_by_station[c.departure_stop].append(c)
+        for stop in stop_times:
+            if stop["station_id"] not in connections_by_station:
+                # This stop is not in the connections list, so we can't match it to a connection
+                continue
+            stop_cons = connections_by_station[stop["station_id"]]
+            # If there are more then one connections, satisfy the first one in the list.
+            # Do a pop so it removes the other one! 
+            con = stop_cons.pop(0)
+            con.shapes = stop["shapes"]
+        # Do sanity check that all connections have shapes
+        for c in connections:
+            if c.shapes is None:
+                print(f"connection {c} does not have shapes!")
+                print(f"connections_by_station - {connections_by_station}")
+                print(f"stop_times - {stop_times}")
+                raise Exception("Connection does not have shapes!")
 
 def get_tlv_timetable(reparse=False, full_reparse=False):
     if os.path.isfile(TLV_TIMETABLE_OBJ) and not reparse:
@@ -93,20 +234,53 @@ def get_tlv_timetable(reparse=False, full_reparse=False):
         return tt
 
 
+def test_searchable_stations():
+    # tt = get_tlv_timetable(True)
+    tt = get_tlv_timetable()
+    start_stop = "44420"
+    # 33843, 14161, 48790
+    start_station = tt.stations[start_stop]
+    print("start station - ", start_station)
+    print("searching for stations near start station...")
+    
+    with Timer(text="searching for stations near start station with 200 radius took {:.4f} seconds..."):
+        nearby_stations_200 = tt.searchable_stations.search_nearby_stations(start_station, 200)
+    print(f"got {len(nearby_stations_200)} stations")
+    display_stations(nearby_stations_200, marker_station=start_station, radius=200)
+
+    with Timer(text="searching for stations near start station with 500 radius took {:.4f} seconds..."):
+        nearby_stations_500 = tt.searchable_stations.search_nearby_stations(start_station, 500)
+    print(f"got {len(nearby_stations_500)} stations")
+    display_stations(nearby_stations_500, start_station, radius=500)
+    
+    with Timer(text="searching for stations near start station with 1000 radius took {:.4f} seconds..."):
+        nearby_stations_1000 = tt.searchable_stations.search_nearby_stations(start_station, 1000)
+    print(f"got {len(nearby_stations_1000)} stations")
+    display_stations(nearby_stations_1000, start_station, radius=1000)
+
+    with Timer(text="searching for stations near start station with 10000 radius took {:.4f} seconds..."):
+        nearby_stations_10000 = tt.searchable_stations.search_nearby_stations(start_station, 10000)
+    print(f"got {len(nearby_stations_10000)} stations")
+    display_stations(nearby_stations_10000, start_station, radius=10000)
+
 def test_tlv_timetable():
-    # tt = get_tlv_timetable()
-    tt = get_tlv_timetable(True, True)
-    some_stop_connections =  get_some_items(tt.stop_connections)
+    tt = get_tlv_timetable()
+    # tt = get_tlv_timetable(True, True)
+    # tt = get_tlv_timetable(True)
+    some_station_connections =  get_some_items(tt.station_connections)
     some_trip_connections = get_some_items(tt.trip_connections)
-    print("stop connections - ",some_stop_connections[:3])
+    print("stop connections - ",some_station_connections[:3])
     print("trip connections - ", some_trip_connections[:3])
 
-    following_trip = tt.follow_trip(list(some_stop_connections[0].values())[0][0])
+    following_trip = tt.follow_trip(list(some_station_connections[0].values())[0][0])
     print("following trip - ", following_trip)
-    display_connections(following_trip)
+    display_all_gtfs_stations(tt.gtfs_instance, 1)
+    display_connections(tt, following_trip)
+    print("done!")
 
 def main():
-    test_tlv_timetable()
+    test_searchable_stations()
+    # test_tlv_timetable()
 
 if __name__ == '__main__':
     main()

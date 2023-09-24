@@ -1,5 +1,6 @@
 import tilemapbase
 from matplotlib import pyplot as plt
+from utils import meters_to_degrees
 
 def get_stations_area(stations):
     min_lon = min(stations, key=lambda x: float(x["stop_lon"]))
@@ -8,6 +9,10 @@ def get_stations_area(stations):
     max_lat = max(stations, key=lambda x: float(x["stop_lat"]))
     area = (float(min_lon["stop_lon"]), float(max_lon["stop_lon"]), float(min_lat["stop_lat"]), float(max_lat["stop_lat"])) 
     return area
+
+def get_color(i):
+    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
+    return colors[i % len(colors)]
 
 def get_cmap(n, name='hsv'):
     '''Returns a function that maps each index in 0, 1, ..., n-1 to a distinct 
@@ -40,7 +45,37 @@ def initiate_plotter(area):
     plotter.plot(ax, t)
     return plotter, ax
 
-def display_gtfs_stations(gtfs_instance, plot_chance=1):
+def display_visited_stations(tt, visited_stations, start_station, end_station):
+    stations = [tt.stations[st_id] for st_id in visited_stations.keys()]
+    # Also get last arrival stop
+    area = get_stations_area(stations)
+    plotter, ax = initiate_plotter(tt.gtfs_instance.area)
+    # visited_stations is a dict of station_id -> (arrival_time, prev_station, connection, prev_connection)
+    
+    longs = (float(s["stop_lon"]) for s in stations)
+    lats = (float(s["stop_lat"]) for s in stations)
+
+    path = [tilemapbase.project(x,y) for x,y in zip(longs, lats)]
+    x, y = zip(*path)
+    # Plot stations as dots on the map
+    ax.scatter(x,y, marker=".", color="black")
+    for i, st in enumerate(visited_stations.values()):
+        ax.annotate(st[0], (x[i], y[i]))
+    
+    # Display start station and end station with different colors
+    path = [tilemapbase.project(float(start_station["stop_lon"]), float(start_station["stop_lat"]))]
+    x, y = zip(*path)
+    ax.scatter(x,y, marker="x", color="blue")
+    
+    path = [tilemapbase.project(float(end_station["stop_lon"]), float(end_station["stop_lat"]))]
+    x, y = zip(*path)
+    ax.scatter(x,y, marker="x", color="red")
+
+    # Show the plot
+    plt.show()
+
+    
+def display_all_gtfs_stations(gtfs_instance, plot_chance=1, marker_station=None, radius=0):
     """
     Display the stations on a map using tilemapbase
     @gtfs_instance - an instance of GTFS class
@@ -48,16 +83,71 @@ def display_gtfs_stations(gtfs_instance, plot_chance=1):
     """
     plotter, ax = initiate_plotter(gtfs_instance.area)
     plot_filter = 1//plot_chance
-    longs = (float(s["stop_lon"]) for s in gtfs_instance.stops.values() if int(s["station_id"]) % plot_filter == 0)
-    lats = (float(s["stop_lat"]) for s in gtfs_instance.stops.values() if int(s["station_id"]) % plot_filter == 0)
+    longs = (float(s["stop_lon"]) for s in gtfs_instance.stations.values() if int(s["station_id"]) % plot_filter == 0)
+    lats = (float(s["stop_lat"]) for s in gtfs_instance.stations.values() if int(s["station_id"]) % plot_filter == 0)
+    station_ids = (s["station_id"] for s in gtfs_instance.stations.values() if int(s["station_id"]) % plot_filter == 0)
     path = [tilemapbase.project(x,y) for x,y in zip(longs, lats)]
     x, y = zip(*path)
     # Plot stations as dots on the map
     ax.scatter(x,y, marker=".", color="black")
+    
+    for i, st in enumerate(station_ids):
+        ax.annotate(st, (x[i], y[i]))
+    
+    if marker_station is not None:
+        path = [tilemapbase.project(float(marker_station["stop_lon"]), float(marker_station["stop_lat"]))]
+        x, y = zip(*path)
+        ax.scatter(x,y, marker="x", color="red")
+
+        if radius > 0:
+            # project radisu which is in meters to appropriate scale. so first we need to cast to degrees
+        
+            radius_degs = meters_to_degrees(radius)
+            path = [tilemapbase.project(radius_degs, radius_degs)]
+            radius_scaled, garbg  = zip(*path)
+            # print(radius_scaled)
+            radius_scaled = radius_scaled[0] - 0.5
+            # print("plotting radius!!", (x,y), radius_scaled)
+            circle = plt.Circle((x, y), radius_scaled, color='r')
+            ax.add_artist(circle)
     # Show the plot
     plt.show()
 
-def display_gtfs_stations_for_trip(gtfs_instance, trip_id):
+def display_stations(stations, marker_station=None, radius=0, fill=False, direct=False):
+    area = get_stations_area(stations)
+    plotter, ax = initiate_plotter(area)
+    longs = (float(s["stop_lon"]) for s in stations)
+    lats = (float(s["stop_lat"]) for s in stations)
+
+    path = [tilemapbase.project(x,y) for x,y in zip(longs, lats)]
+    x, y = zip(*path)
+    # Plot stations as dots on the map
+    ax.scatter(x,y, marker=".", color="black")
+    for i, st in enumerate(stations):
+        ax.annotate(st["station_id"], (x[i], y[i]))
+
+    if marker_station is not None:
+        path = [tilemapbase.project(float(marker_station["stop_lon"]), float(marker_station["stop_lat"]))]
+        x, y = zip(*path)
+        ax.scatter(x,y, marker="x", color="red")
+
+        if radius > 0:
+            # project radisu which is in meters to appropriate scale. so first we need to cast to degrees
+            if(direct):
+                radius_scaled = radius
+            else:
+                radius_degs = meters_to_degrees(radius)
+                path = [tilemapbase.project(radius_degs, radius_degs)]
+                radius_scaled, garbg  = zip(*path)
+                # print(radius_scaled)
+                radius_scaled = radius_scaled[0] - 0.5
+            # print("plotting radius!!", (x,y), radius_scaled)
+            circle = plt.Circle((x, y), radius_scaled, color='r', fill=fill)
+            ax.add_artist(circle)
+    # Show the plot
+    plt.show()
+
+def display_all_gtfs_stations_for_trip(gtfs_instance, trip_id):
     """
     Display the stations on a map using tilemapbase
     @gtfs_instance - an instance of GTFS class
@@ -180,44 +270,89 @@ def display_gtfs_trip_shapes(gtfs_instance, trip_id):
     
     plt.show()
 
-def display_connections(timetable, connections):
+def display_RaptorResult(raptor_result):
+    ax = display_connections(raptor_result.tt, raptor_result.result_connections, no_show=True)
+    
+    # Display the line transfers at designated stations, skip last station
+    stations = [raptor_result.tt.stations[r[0]] for r in raptor_result.result_route[:-1]]
+    # Also get last arrival stop
+    longs = (float(s["stop_lon"]) for s in stations)
+    lats = (float(s["stop_lat"]) for s in stations)
+
+    path = [tilemapbase.project(x,y) for x,y in zip(longs, lats)]
+    x, y = zip(*path)
+    
+    for i, st in enumerate(stations):
+        print(x,y)
+        if i == 0:
+            ax.annotate(raptor_result.bus_lines[i], (x[i], y[i]), color="red")
+        else:
+            ax.annotate(f"{raptor_result.bus_lines[i-1]}->{raptor_result.bus_lines[i]}", (x[i], y[i]), color="red")
+
+    # Add description of this result on top
+    ax.text(.01, .99, str(raptor_result), ha='left', va='top', transform=ax.transAxes)
+    plt.show()
+
+def display_connections(timetable, connections, no_show=False):
     # Display a route on a map using tilemapbase
     
+    # match shapes to stations in trip, match it for all trips.
+    connections_by_trip = {}
+    for c in connections:
+        if c.trip_id not in connections_by_trip:
+            connections_by_trip[c.trip_id] = [c]
+        else:
+            connections_by_trip[c.trip_id].append(c)
+    trip_colors = {}
+    trip_colors_options = get_cmap(len(connections_by_trip.keys()))
+    for i, trip_id in enumerate(connections_by_trip.keys()):
+        timetable.match_shapes_to_connections(connections_by_trip[trip_id])
+        trip_colors[trip_id] = get_color(i)
+
+
     # Get area of the route to display
-    stops = [c.departure_stop for c in connections]
+    stations = [timetable.stations[c.departure_stop] for c in connections]
     # Also get last arrival stop
-    stops.append(connections[-1].arrival_stop)
-    area = get_stations_area(stops)
+    stations.append(timetable.stations[connections[-1].arrival_stop])
+    area = get_stations_area(stations)
     print(area)
 
     plotter, ax = initiate_plotter(area)
-    print("got specific stations for trip")
-    print(stops)
+    # print("got specific stations for trip")
+    # print(stations)
 
-    longs = (float(s[1]["stop_lon"]) for s in stops)
-    lats = (float(s[1]["stop_lat"]) for s in stops)
+    longs = (float(s["stop_lon"]) for s in stations)
+    lats = (float(s["stop_lat"]) for s in stations)
 
     path = [tilemapbase.project(x,y) for x,y in zip(longs, lats)]
     x, y = zip(*path)
     # Plot stations as dots on the map
     ax.scatter(x,y, marker=".", color="black")
-    for i, st in enumerate(stops):
-        ax.annotate(st[0], (x[i], y[i]))
+    for i, st in enumerate(stations):
+        ax.annotate(i, (x[i], y[i]))
 
     # Now plot the shape of the trip
-    trip_shapes = timetable.shapes[timetable.trips[trip_id]["shape_id"]]
-    
-    shape_longs = (float(s["shape_pt_lon"]) for s in trip_shapes)
-    shape_lats = (float(s["shape_pt_lat"]) for s in trip_shapes)
-    shapes_path = [tilemapbase.project(x,y) for x,y in zip(shape_longs, shape_lats)]
-    shapes_x, shapes_y = zip(*shapes_path)
-    # connect each shape point to the next one with a line
-    # plot with x and y data
-    ax.plot(shapes_x, shapes_y)
+    prev_last_shape = []
+    painted_trip_id = {}
+    for c in connections:
+        # Start with connection to last shape
+        c_shapes = prev_last_shape + c.shapes  
+        prev_last_shape = [c_shapes[-1]]
+        shape_longs = (float(s["shape_pt_lon"]) for s in c_shapes)
+        shape_lats = (float(s["shape_pt_lat"]) for s in c_shapes)
+        shapes_path = [tilemapbase.project(x,y) for x,y in zip(shape_longs, shape_lats)]
+        shapes_x, shapes_y = zip(*shapes_path)
+        # connect each shape point to the next one with a line
+        # plot with x and y datawq  1
+        painted_trip_id[c.trip_id] = trip_colors[c.trip_id]
+        ax.plot(shapes_x, shapes_y, color=trip_colors[c.trip_id])
 
-    # Next - plot arrows between the stations
-    for i in range(len(x)-1):
-        ax.annotate("", xy=(x[i+1], y[i+1]), xytext=(x[i], y[i]), arrowprops=dict(arrowstyle="->", color="red"))
+    # # Next - plot arrows between the stations
+    # for i in range(len(x)-1):
+    #     ax.annotate("", xy=(x[i+1], y[i+1]), xytext=(x[i], y[i]), arrowprops=dict(arrowstyle="->", color="red"))
     # Show the plot
-    plt.show()
+    if no_show:
+        return ax
+    else:
+        plt.show()
 

@@ -129,5 +129,29 @@ After viewing some lectures about SOTA algorithms, i've decided on the following
     Right now i'm leaning towards walking, at least the basic stuff, because without it nothing will be practical. 
     GN
 
+## 09/22/2023 
+* I've worked alot on matching shapes to stops, so a single connection now holds a shape between stations.
+* Now i need to do some actual programming of an algorithm i guess, let's go for a raptor!
+
+## 09/24/2023 
+* Finished RAPTOR! it works, produces the best outcome (shortest arrival time) for a start time, start_station, arrival_station
+* Next steps - 
+    * add walking, so i can choose starting location instead of starting station (hard)
+    * add variance in depature time (leave at +- 15 min to get lower travel time or lower transfers)
+* Then the actual next big step will be adding car routing, which will involve more pre-processing, algorithms, and such.
+* I can simutaniusly develop the option for being given a car route, integrate it into the multi-modal algorithm.
+
+## Integrating with pyvalhalla
+I think i will start integration with pyvalhalla (python bindings for valhalla). I'll do this first for getting walk-to-station, so i can complement my RAPTOR design with it.
+After that is done, i can use Valhalla to get car routes to add to my RAPTOR.
+Note - pyvalhalla is GNU license, which means i can't use it without making my code opensource, bu Vallhalla is MIT.
+So before moving to production i need to make python bindings myselfe, or even better - just use Native valhalla.
+
+
+# to generate new tiles (shouldn't be done much)
+1. put ISR israel-and-palestine-latest.osm.pbf in custom_files
+2. docker run --rm -dt --name valhalla_gis-ops -p 8002:8002 -v %cd%/custom_files:/custom_files ghcr.io/gis-ops/docker-valhalla/valhalla:latest
+
+
 # links
 https://www.youtube.com/watch?v=AdArDN4E6Hg&t=1s&ab_channel=DFG-FOR2083
