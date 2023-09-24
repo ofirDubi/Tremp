@@ -1,9 +1,12 @@
-from utils import BinarySearchIdx, time_text_to_int, get_some_items
+from utils import BinarySearchIdx, time_text_to_int, get_some_items, time_int_to_text
 from connection_builder import Connection, Timetable, get_tlv_timetable
 from display import display_connections, display_visited_stations, display_RaptorResult
 import time
+import utils
+import os
+import valhalla
+from codetiming import Timer
 
-from valhalla import Actor, get_config, get_help
 
 
 class RaptorResult():
@@ -63,6 +66,14 @@ class RaptorResult():
         return f"RaptorResult: departure_time={self.departure_time}, arrival_time={self.arrival_time}, trip_time={self.trip_time}, num_stops={self.num_stops}, num_transfers={self.num_transfers}, bus_lines={self.bus_lines}"
 
 def _traverse_route(visited_stations, end_station, start_station):
+    """
+    @visited_stations - a dict of station_id -> (arrival_time, prev_station, connection, prev_connection)
+    @end_station - the station to end at
+    @start_station - the station to start from
+    This function is a sort of filter - if the route did not visit the end station then this trip is not relevent, so return None.
+    Otherwise, return the route.
+    Now i need to consider if i can walk from each station to the end, so 
+    """
     result_route = []
     if end_station not in visited_stations:
         return None
@@ -82,11 +93,14 @@ class RaptorRouter(object):
     def __init__(self, tt):
         # All optimizations should be perforemd on the timetable object
         # This class should only be used to route and handle Valhalla API
-        config = get_config(tile_extract='./custom_files/valhalla_tiles.tar', verbose=False)
-        self.actor = Actor(config)
-        self.stations_as_locations = [{"lat": s["stop_lat"], "lon": s["stop_lon"]} for s in tt.stations]
+        config = valhalla.get_config(tile_extract=os.path.join(utils.VALHALLA_FOLDER,'./custom_files/valhalla_tiles.tar'), verbose=True)
+        # TODO: figure out whay changing this in json doesn't work
+        config["service_limits"]["pedestrian"]["max_matrix_location_pairs"] = len(tt.stations) + 100 # pad another 100 just to be sure
+        self.actor = valhalla.Actor(config)
+        self.stations_as_locations = [{"lat": s["stop_lat"], "lon": s["stop_lon"]} for s in tt.stations.values()]
+        self._walking_station_id = 0
 
-    def semi_ultra_route(self, start_location, end_location, start_time, tt, relax_footpaths=True,debug=False):        
+    def semi_ultra_route(self, start_location, end_location, start_time, tt, relax_footpaths=True,debug=False, limit_walking_time=40*60):        
         """
         # route using the ULTRA algorithm, but only for the first and last leg of the trip
         # for now we skip optimization for the middle part of the trip, because it requires alot of preprocessing on the graph.
@@ -97,19 +111,54 @@ class RaptorRouter(object):
         """
         # {"sources":[{"lat":40.744014,"lon":-73.990508}],"targets":[{"lat":40.744014,"lon":-73.990508},{"lat":40.739735,"lon":-73.979713},{"lat":40.752522,"lon":-73.985015},{"lat":40.750117,"lon":-73.983704},{"lat":40.750552,"lon":-73.993519}],"costing":"pedestrian"}
         # Get paths from start to all other stations
-        query = {"sources" :[{"lat": start_location["stop_lat"], "lon": start_location["stop_lon"]}], "targets": self.stations_as_locations, "costing": "pedestrian"}
-        source_footpath_connections = self.actor.matrix(query)
+        start_lon_lat = {"lat": start_location["stop_lat"], "lon": start_location["stop_lon"]}
+        end_lon_lat = {{"lat": end_location["stop_lat"], "lon": end_location["stop_lon"]}}
+        start_station = tt._create_walking_station(start_lon_lat, name="Start")
+        end_station = tt._create_walking_station(end_lon_lat, name="End")
+        targets = [end_location] + self.stations_as_locations
+
+        query = {"sources" :[start_lon_lat], "targets": end_lon_lat + self.stations_as_locations, "costing": "pedestrian"}
+        print(f"[+] parsing query - {len(self.stations_as_locations)}")
+        with Timer(text="[+] searching paths from src to all stations took {:.4f} seconds..."):
+            source_footpath_connections = self.actor.matrix(query)
+            sotred_start_to_st = sorted(source_footpath_connections["sources_to_targets"][0], key=lambda x: x["time"])
+        # Now in sorted_stt we have all the stations sorted by time to get there by foot from start station.
+        # Also the first index in source_footpath_connections["targets"] is the end location, so we already have walking time to it if we want :)
+
+        # Get paths from all other stations to end station
+        query = {"sources" : self.stations_as_locations, "targets": end_lon_lat, "costing": "pedestrian"}
+        with Timer(text="[+] searching paths from all stations to dst took {:.4f} seconds..."):
+            end_footpath_connections = self.actor.matrix(query)
+            sorted_st_to_end = sorted(source_footpath_connections["sources_to_targets"][0], key=lambda x: x["time"])     
+        
+        # Now we have all the stations sorted by time to get there by foot from end station, so insert it to the graph!
+        # TODO: optimization - it might be faster to search for stations 1 km from me, and only if the algorithm is not satisfied at the end i will search more.
+        visited_stations = {start_location : (start_time, start_location, None, None)}
+        for i, s_to_t in enumerate(sotred_start_to_st):
+            if s_to_t["time"] > limit_walking_time:
+                break
+            if s_to_t["to_index"] == 0:
+                # found path to end location - considered exiting here, but idk if i want to actually. 
+                target_station = end_station
+            else:
+                # Note below, -1 because i also search a path to the end location.
+                target_station = tt.stations.values()[s_to_t["to_index"]-1]
+            
+            # create a connection from start location to this station
+            c = Connection(start_station, target_station, start_time,
+             time_int_to_text(time_text_to_int(start_time) + s_to_t["time"]), "footpath")
+            tt.station_connections[start_station].append(c)
+
+            #visited_stations[target_station] = (c.arrival_time, start_station, c, None)
+
+        # Call noraml raprot_route, with the exception that now we can relax end footpaths
+        raptor_route_from_station(start_station, end_station, start_time, tt, relax_end_footpaths=sorted_st_to_end,debug=debug)
+
         print("got res!")
     
-def raptor_route(start_station, end_station, start_time, tt, relax_footpaths=True,debug=False):
-    """
-    Route from location A to location B, using raptor algorithm and relaxing footpaths at start and end. 
-    """
-    # Preprocessing 
-    # 1. Relax footpaths at start and end
-    # 
 
-def raptor_route_from_station(start_station, end_station, start_time, tt, relax_footpaths=True,debug=False):
+
+def raptor_route_from_station(start_station, end_station, start_time, tt, relax_end_footpaths=True,debug=False):
     """
     Route from station to station
     @start_station - the station to start from
@@ -167,11 +216,14 @@ def raptor_route_from_station(start_station, end_station, start_time, tt, relax_
                         break
                     if (following_c.arrival_stop not in visited_stations or \
                         time_text_to_int(following_c.arrival_time) < time_text_to_int(visited_stations[following_c.arrival_stop][0])):
-                        # IT is not enough to save station, because if a trip has circles we need to know.
+                        # It is not enough to save station, because if a trip has circles we need to know.
                         # So if this is the best connection to bring us to the station, set the arrival stop of this station to this connection.
+                        # TODO: implement walking to the end stations. i need to aproach this with a fresher mind, but what i think
+                        # is possible is instead of comparing arrival time, we will compare arrival time + walking time to the end station.
                         visited_stations[following_c.arrival_stop] = (following_c.arrival_time, station, following_c, origin_c)
                         next_round_new_stations[following_c.arrival_stop] = following_c.arrival_time
                     
+
                     if following_c.arrival_stop == end_station:
                         # We found a route !
                         # There is no point further persuing this trip...

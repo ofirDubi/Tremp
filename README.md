@@ -151,7 +151,7 @@ So before moving to production i need to make python bindings myselfe, or even b
 # to generate new tiles (shouldn't be done much)
 1. put ISR israel-and-palestine-latest.osm.pbf in custom_files
 2. docker run --rm -dt --name valhalla_gis-ops -p 8002:8002 -v %cd%/custom_files:/custom_files ghcr.io/gis-ops/docker-valhalla/valhalla:latest
-
+https://github.com/gis-ops/docker-valhalla
 
 # links
 https://www.youtube.com/watch?v=AdArDN4E6Hg&t=1s&ab_channel=DFG-FOR2083
