@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import tilemapbase
 import time
 
-from display import display_gtfs_stations, display_gtfs_stations_for_trip, display_gtfs_trip, display_gtfs_trip_shapes
+from display import display_all_gtfs_stations, display_all_gtfs_stations_for_trip, display_gtfs_trip, display_gtfs_trip_shapes, get_stations_area
 
 from utils import *
 
@@ -104,6 +104,7 @@ class GTFS:
         # Note - parsing order is important. 
         self.agencies = self._parse_agencies()
         self.calendar = self._parse_calendar()
+
         self.stations = self._parse_stations()
         self.routes = self._parse_routes()
         self.shapes = self._parse_shapes()
@@ -398,6 +399,10 @@ class GTFS:
 
     def match_stops_to_shapes_for_trip(self, trip_id):
         stop_list = self.stop_times[trip_id]
+        if "shapes" in stop_list[0]:
+            # This has already been processed.
+            return stop_list
+
         shape_id = self.trips[trip_id]["shape_id"]
         if shape_id not in self.shapes:
             # if no shape specified, create shape from stations 
@@ -426,6 +431,8 @@ class GTFS:
         for i in range(len(stop_list)-1):
             stop_list[i]["shapes"] = trip_shapes[stop_list[i]["closest_shape_seq"] : stop_list[i+1]["closest_shape_seq"]]
         stop_list[-1]["shapes"] = []
+
+        return stop_list
 
     def _parse_stop_times(self):
         # trip_id,arrival_time,departure_time,stop_id(station_id),stop_sequence,pickup_type,drop_off_type,shape_dist_traveled
@@ -620,6 +627,8 @@ def reduce_gtfs(gtfs, min_lon, max_lon, min_lat, max_lat):
     gtfs.stations = new_stations
     gtfs.trips = new_trips
     gtfs.stop_times = new_stop_times
+
+    gtfs.area = get_stations_area(new_stations.values())
     return gtfs
 
 
@@ -637,10 +646,10 @@ def test_is_gtfs_parser():
     # print("calendar: ", get_some_items(gtfs.calendar))
     # print("shapes: ", get_some_items(gtfs.shapes))
     # print("trips: ", get_some_items(gtfs.trips))
-    # display_gtfs_stations(gtfs, 0.5)
-    # display_gtfs_stations(gtfs, 0.5)
+    # display_all_gtfs_stations(gtfs, 0.5)
+    # display_all_gtfs_stations(gtfs, 0.5)
     
-    # display_gtfs_stations_for_trip(gtfs,"17076498_090223")
+    # display_all_gtfs_stations_for_trip(gtfs,"17076498_090223")
     display_gtfs_trip(gtfs, "17076498_090223")
     # display_stations(gtfs, 1)
 
@@ -655,7 +664,7 @@ def test_is_tlv_gtfs_parser():
     print_log("num of trips - ", len(gtfs.trips))
     some_trip_id = list(gtfs.trips.keys())[0]   
     print(f"showind trip id - {some_trip_id}")
-    # display_gtfs_stations_for_trip(gtfs, some_trip_id)
+    # display_all_gtfs_stations_for_trip(gtfs, some_trip_id)
     display_gtfs_trip(gtfs, some_trip_id)
 
 def main():
