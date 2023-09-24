@@ -73,15 +73,20 @@ class SearchableStations(object):
 
         # Search for stations in the same bucket radius
         for i, probable_stations in enumerate(self.sorted_stations[start_search_idx: end_search_idx]):
+            
+
             # Discard the first item, which is the bucket lon
             probable_stations = probable_stations[1:]
             # probable_stations are Y ordered.
             # Search for stations in the same Y radius, Y is not stored in meters, but in degrees.
             starting_y_idx = BinarySearchIdx(probable_stations, target_y, key=lambda x: float(x["stop_lat"]))
-            
-            # TODO - this can be more efficient - we can search for the first station that is further than radius, and then search backwards
+
+            # TODO - this can be more efficient - we can search for the first station that is further than radius with binary search, and then search backwards
             # The only cavity here is that because of X variance we might be off by a BUCKET_SIZE.
             # Honestly i can just say i'm okay to give an accurecy of BUCKET_SIZE, and that's it.
+            # Another better optimization - for each X bucket we have BREATH = radius - (BUCKET_SIZE * abs(i - bucket_x_idx))
+            # We can do binary search to find edges of where BREATH ends. 
+            # This way we get log(y) instead of y, and when dealing with large areas (above 1 KM) this becomes substatial.
             # For now iterate every station that is a possible match, the massive optimization should have been done by the X search 
             # 33843, 14161, 48790
             # Search up until i hit radius or higher 
@@ -123,8 +128,8 @@ class SearchableStations(object):
 # - trip id (trip is a sequence of connections)
 class Connection(object):
     def __init__(self, departure_stop, arrival_stop, departure_time, arrival_time, trip_id):
-        self.departure_stop = departure_stop
-        self.arrival_stop = arrival_stop
+        self.departure_stop = departure_stop # actual stop obj
+        self.arrival_stop = arrival_stop # actual stop obj
         self.departure_time = departure_time
         self.arrival_time = arrival_time
         self.trip_id = trip_id
@@ -141,6 +146,8 @@ class Timetable(object):
         self.station_connections = {}
         self.trip_connections = {}
 
+        # Add 
+
         # Just copy stations and trips from gtfs
         self.stations = gtfs.stations
         self.trips = gtfs.trips
@@ -149,7 +156,14 @@ class Timetable(object):
         self.searchable_stations = SearchableStations(self.stations.values(),)
         self.build_timetable(gtfs)
 
-
+        
+    def _create_walking_station(self, station_lon_lat, name="Walking"):
+        self._walking_station_id -= 1
+        new_statoin = {"station_id" : str(self._walking_station_id), "stop_lon": station_lon_lat["lon"], "stop_lat": station_lon_lat["lat"], "stop_name" : name} 
+        self.stations[str(self._walking_station_id)] = new_statoin
+        self.station_connections[str(self._walking_station_id)] = []
+        return new_statoin
+    
     def build_timetable(self, gtfs):
         # A connection is besically two following stations, so each pair of stops will be a connection.
         # Pretty easy.
