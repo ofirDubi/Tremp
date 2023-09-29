@@ -10,7 +10,9 @@ def get_stations_area(stations):
     area = (float(min_lon["stop_lon"]), float(max_lon["stop_lon"]), float(min_lat["stop_lat"]), float(max_lat["stop_lat"])) 
     return area
 
-def get_color(i):
+def get_color(i, trip_id=None):
+    if trip_id == "footpath":
+        return 'gray'
     colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
     return colors[i % len(colors)]
 
@@ -270,6 +272,28 @@ def display_gtfs_trip_shapes(gtfs_instance, trip_id):
     
     plt.show()
 
+# def display_RaptorResult_v2(raptor_result):
+#     ax = display_connections(raptor_result.tt, raptor_result.result_connections, no_show=True)
+#     # Display the line transfers at designated stations, skip last station
+#     stations = [raptor_result.tt.stations[r[0]] for r in raptor_result.result_route[:-1]]
+#     longs = (float(s["stop_lon"]) for s in stations)
+#     lats = (float(s["stop_lat"]) for s in stations)
+
+#     path = [tilemapbase.project(x,y) for x,y in zip(longs, lats)]
+#     x, y = zip(*path)
+    
+#     for i, st in enumerate(stations):
+#         print(x,y)
+#         if i == 0:
+#             ax.annotate(raptor_result.bus_lines[i], (x[i], y[i]), color="red")
+#         else:
+#             ax.annotate(f"{raptor_result.bus_lines[i-1]}->{raptor_result.bus_lines[i]}", (x[i], y[i]), color="red")
+
+#     # Add description of this result on top
+#     ax.text(.01, .99, str(raptor_result), ha='left', va='top', transform=ax.transAxes)
+#     plt.show()
+
+
 def display_RaptorResult(raptor_result):
     ax = display_connections(raptor_result.tt, raptor_result.result_connections, no_show=True)
     
@@ -307,7 +331,7 @@ def display_connections(timetable, connections, no_show=False):
     trip_colors_options = get_cmap(len(connections_by_trip.keys()))
     for i, trip_id in enumerate(connections_by_trip.keys()):
         timetable.match_shapes_to_connections(connections_by_trip[trip_id])
-        trip_colors[trip_id] = get_color(i)
+        trip_colors[trip_id] = get_color(i, trip_id)
 
 
     # Get area of the route to display
