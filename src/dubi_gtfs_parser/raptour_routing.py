@@ -1,13 +1,13 @@
-from utils import BinarySearchIdx, time_text_to_int, get_some_items, time_int_to_text
+from utils import BinarySearchIdx, time_text_to_int, get_some_items, time_int_to_text, FOOTPATH_ID
 from connection_builder import Connection, Timetable, get_tlv_timetable
 from display import display_connections, display_visited_stations, display_RaptorResult
 import time
 import utils
 import os
-import valhalla
+import pickle
 from codetiming import Timer
 from dataclasses import dataclass
-
+from valhalla_interface import get_actor 
 
 class RaptorResult_v2():
     def __init__(self, result_route, tt):
@@ -19,7 +19,7 @@ class RaptorResult_v2():
         # Departure time is the departure time from the first station
         self.departure_time = result_route[0][1][0].departure_time
         # Arrival time is the arrival time to the last station, should be walk connection
-        self.arrival_time = result_route[-1][1][-1].arrival_time
+        self.arrival_time = time_int_to_text(result_route[-1][1][-1].arrival_time)
         self.result_route = result_route
         self.tt = tt
         self.result_connections = []
@@ -30,7 +30,7 @@ class RaptorResult_v2():
         self.trip_time = (time_text_to_int(self.arrival_time) - time_text_to_int(self.departure_time)) / 60
         self.bus_lines = []
         for r in self.result_route:
-            line = tt.gtfs_instance.routes[tt.trips[r[1].trip_id]["route_id"]]["route_short_name"]
+            line = tt.gtfs_instance.routes[tt.trips[r[1][0].trip_id]["route_id"]]["route_short_name"]
             self.bus_lines.append(line)
 
     def display_result(self):
@@ -97,7 +97,7 @@ class RaptorResult():
 
     
 
-def _traverse_route(visited_stations, end_station, start_station, stations_to_end):
+def _traverse_route(visited_stations, end_station, start_station):
     """
     @visited_stations - a dict of station_id -> (arrival_time, prev_station, connection, prev_connection)
     @end_station - the station to end at
@@ -125,14 +125,39 @@ class RaptorRouter(object):
     def __init__(self, tt):
         # All optimizations should be perforemd on the timetable object
         # This class should only be used to route and handle Valhalla API
-        config = valhalla.get_config(tile_extract=os.path.join(utils.VALHALLA_FOLDER,'./custom_files/valhalla_tiles.tar'), verbose=True)
         # TODO: figure out whay changing this in json doesn't work
-        config["service_limits"]["pedestrian"]["max_matrix_location_pairs"] = len(tt.stations) + 100 # pad another 100 just to be sure
-        self.actor = valhalla.Actor(config)
+        self.actor = get_actor(tt)
         self.stations_as_locations = [{"lat": s["stop_lat"], "lon": s["stop_lon"]} for s in tt.stations.values()]
         self._walking_station_id = 0
+  
+    
+    def _get_walking_start_end_results(self, start_lon_lat, end_lon_lat, tt):
+        # load from file if exists
+        file_path = os.path.join(utils.ARTIFACTS_FOLDER, f"walking_start_{'_'.join([str(i) for i in start_lon_lat.values()])}_end_{'_'.join([str(i) for i in end_lon_lat.values()])}_results.pkl")
+        if os.path.isfile(file_path):
+            with Timer(text="[+] loading from file paths from src to all stations took {:.4f} seconds..."):
+                sotred_start_to_st, end_footpath_connections = utils.load_artifact(file_path)
+        else:
+            targets = [end_lon_lat] + self.stations_as_locations
+            query = {"sources" :[start_lon_lat], "targets": targets, "costing": "pedestrian"}
+            print(f"[+] parsing query - {len(self.stations_as_locations)}")
+            with Timer(text="[+] searching paths from src to all stations took {:.4f} seconds..."):
+                source_footpath_connections = self.actor.matrix(query)
+                sotred_start_to_st = sorted(source_footpath_connections["sources_to_targets"][0], key=lambda x: x["time"])
+            # Now in sorted_stt we have all the stations sorted by time to get there by foot from start station.
+            # Also the first index in source_footpath_connections["targets"] is the end location, so we already have walking time to it if we want :)
+
+            # Get paths from all other stations to end station
+            query = {"sources" : self.stations_as_locations, "targets": [end_lon_lat], "costing": "pedestrian"}
+            with Timer(text="[+] searching paths from all stations to dst took {:.4f} seconds..."):
+                end_footpath_connections = self.actor.matrix(query)
+                #sorted_st_to_end = sorted(source_footpath_connections["sources_to_targets"][0], key=lambda x: x["time"])     
+            utils.save_artifact((sotred_start_to_st, end_footpath_connections), file_path)
         
-    def semi_ultra_route(self, start_location, end_location, start_time, tt, relax_footpaths=True,debug=False, limit_walking_time=40*60):        
+        return sotred_start_to_st, end_footpath_connections
+
+
+    def semi_ultra_route(self, start_location, end_location, start_time, tt : Timetable, relax_footpaths=True,debug=False, limit_walking_time=60*60):        
         """
         # route using the ULTRA algorithm, but only for the first and last leg of the trip
         # for now we skip optimization for the middle part of the trip, because it requires alot of preprocessing on the graph.
@@ -144,24 +169,27 @@ class RaptorRouter(object):
         # {"sources":[{"lat":40.744014,"lon":-73.990508}],"targets":[{"lat":40.744014,"lon":-73.990508},{"lat":40.739735,"lon":-73.979713},{"lat":40.752522,"lon":-73.985015},{"lat":40.750117,"lon":-73.983704},{"lat":40.750552,"lon":-73.993519}],"costing":"pedestrian"}
         # Get paths from start to all other stations
         start_lon_lat = {"lat": start_location["stop_lat"], "lon": start_location["stop_lon"]}
-        end_lon_lat = {{"lat": end_location["stop_lat"], "lon": end_location["stop_lon"]}}
+        end_lon_lat = {"lat": end_location["stop_lat"], "lon": end_location["stop_lon"]}
         start_station = tt._create_walking_station(start_lon_lat, name="Start")
         end_station = tt._create_walking_station(end_lon_lat, name="End")
-        targets = [end_location] + self.stations_as_locations
+        
+        sotred_start_to_st, end_footpath_connections = self._get_walking_start_end_results(start_lon_lat, end_lon_lat, tt)
 
-        query = {"sources" :[start_lon_lat], "targets": end_lon_lat + self.stations_as_locations, "costing": "pedestrian"}
-        print(f"[+] parsing query - {len(self.stations_as_locations)}")
-        with Timer(text="[+] searching paths from src to all stations took {:.4f} seconds..."):
-            source_footpath_connections = self.actor.matrix(query)
-            sotred_start_to_st = sorted(source_footpath_connections["sources_to_targets"][0], key=lambda x: x["time"])
-        # Now in sorted_stt we have all the stations sorted by time to get there by foot from start station.
-        # Also the first index in source_footpath_connections["targets"] is the end location, so we already have walking time to it if we want :)
+        # targets = [end_lon_lat] + self.stations_as_locations
 
-        # Get paths from all other stations to end station
-        query = {"sources" : self.stations_as_locations, "targets": end_lon_lat, "costing": "pedestrian"}
-        with Timer(text="[+] searching paths from all stations to dst took {:.4f} seconds..."):
-            end_footpath_connections = self.actor.matrix(query)
-            #sorted_st_to_end = sorted(source_footpath_connections["sources_to_targets"][0], key=lambda x: x["time"])     
+        # query = {"sources" :[start_lon_lat], "targets": targets, "costing": "pedestrian"}
+        # print(f"[+] parsing query - {len(self.stations_as_locations)}")
+        # with Timer(text="[+] searching paths from src to all stations took {:.4f} seconds..."):
+        #     source_footpath_connections = self.actor.matrix(query)
+        #     sotred_start_to_st = sorted(source_footpath_connections["sources_to_targets"][0], key=lambda x: x["time"])
+        # # Now in sorted_stt we have all the stations sorted by time to get there by foot from start station.
+        # # Also the first index in source_footpath_connections["targets"] is the end location, so we already have walking time to it if we want :)
+
+        # # Get paths from all other stations to end station
+        # query = {"sources" : self.stations_as_locations, "targets": [end_lon_lat], "costing": "pedestrian"}
+        # with Timer(text="[+] searching paths from all stations to dst took {:.4f} seconds..."):
+        #     end_footpath_connections = self.actor.matrix(query)
+        #     #sorted_st_to_end = sorted(source_footpath_connections["sources_to_targets"][0], key=lambda x: x["time"])     
         
         # Now we have all the stations sorted by time to get there by foot from end station, so insert it to the graph!
         # TODO: optimization - it might be faster to search for stations 1 km from me, and only if the algorithm is not satisfied at the end i will search more.
@@ -173,17 +201,17 @@ class RaptorRouter(object):
                 target_station = end_station
             else:
                 # Note below, -1 because i also search a path to the end location.
-                target_station = tt.stations.values()[s_to_t["to_index"]-1]
+                target_station = list(tt.stations.values())[s_to_t["to_index"]-1]
             
             # create a connection from start location to this station
-            c = Connection(start_station, target_station, start_time,
-             time_int_to_text(time_text_to_int(start_time) + s_to_t["time"]), "footpath")
-            tt.station_connections[start_station].append(c)
+            c = Connection(start_station["station_id"], target_station["station_id"], start_time,
+             time_int_to_text(time_text_to_int(start_time) + s_to_t["time"]), FOOTPATH_ID)
+            # TODO: there is an issue here, i can't just append this, i need to insert this at start_time!
+            tt.station_connections[start_station["station_id"]].append(c)
 
         # Call noraml raprot_route, with the exception that now we can relax end footpaths
-        raptor_route(start_station, end_station, start_time, tt, end_footpath_connections=end_footpath_connections,debug=debug)
+        return raptor_route(start_station["station_id"], end_station["station_id"], start_time, tt, end_footpath_connections=end_footpath_connections,debug=debug)
 
-        print("got res!")
     
     # def _traverse_route_2(self, visited_stations, end_station, start_station, stations_to_end):
     #     """
@@ -221,7 +249,7 @@ def _traverse_station_v2(station_to_traverse : str, visited_stations : dict[str:
     #end_arrival_time, prev_station, end_connection, prev_connection = visited_stations[end_station]
     result_route = []
     final_walk_connection = Connection(station_to_traverse, end_station, visited_stations[station_to_traverse].arrival_time,
-             visited_stations[station_to_traverse].walking_arrival_time_to_end, "footpath")
+             visited_stations[station_to_traverse].walking_arrival_time_to_end, FOOTPATH_ID)
     result_route.insert(0, (end_station, [final_walk_connection]))
     prev_station = station_to_traverse
     while prev_station != start_station:
@@ -232,7 +260,7 @@ def _traverse_station_v2(station_to_traverse : str, visited_stations : dict[str:
     # result_route.insert(0, (prev_station, []))
     return result_route
 
-def raptor_route(start_station, end_station, start_time, tt, end_footpath_connections=None, limit_walking_time=40*60, debug=False):
+def raptor_route(start_station, end_station, start_time, tt, end_footpath_connections=None, limit_walking_time=1* 60 * 60, debug=False):
     """
     Route from station to station
     @start_station - the station to start from
@@ -261,11 +289,11 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
     visited_routes = {}
     stations_to_end = {}
     if end_footpath_connections is not None:
-        source_stations = tt.stations.values()
-        for s_to_t in end_footpath_connections["source_to_target"]:
-            st = source_stations[s_to_t["from_index"]]
-            if s_to_t["time"] > limit_walking_time:
-                continue
+        source_stations = list(tt.stations.values())
+        for s_to_t in end_footpath_connections["sources_to_targets"]:
+            st = source_stations[s_to_t[0]["from_index"]]
+            # if s_to_t[0]["time"] > limit_walking_time:
+            #     continue
             # Here i can not make a connection, because i don't know the arrival time to the end station.
             """
             visited_stations[following_c.arrival_stop] = (following_c.arrival_time, station, following_c, origin_c)
@@ -273,11 +301,11 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
             """
             # This will only work if i traverse the first walking connections before this one... this is not very good
             # shouldn't be thinking of algorithms at 1 AM i guess...
-            stations_to_end[st] = time_int_to_text(s_to_t["time"])
+            stations_to_end[st["station_id"]] = s_to_t[0]["time"]
     
     visited_stations = {start_station : RVisidetStation(time_text_to_int(start_time), [], time_text_to_int(start_time) + stations_to_end[start_station])}
 
-    new_stations = {start_station: start_time}
+    new_stations = {start_station: time_text_to_int(start_time)}
     next_round_new_stations = {}
     total_result_routes = []
     MAX_ROUNDS = 4
@@ -292,7 +320,7 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
             if station not in tt.station_connections:
                 # if station has no connections leaving from it.
                 continue
-            firts_connection = BinarySearchIdx(tt.station_connections[station], time_text_to_int(st_arrival_time), key=lambda x: time_text_to_int(x.departure_time))
+            firts_connection = BinarySearchIdx(tt.station_connections[station], st_arrival_time, key=lambda x: time_text_to_int(x.departure_time))
             connections =  tt.station_connections[station][firts_connection:]
             for origin_c in connections:
                 # Check if we already visited this route
@@ -417,7 +445,11 @@ def raptor_route_from_station_no_walking(start_station, end_station, start_time,
                     continue
                 visited_routes[origin_c.trip_id] = True
                 # Check if we can improve the arrival time to the arrival station
-                trip_connections = tt.follow_trip(origin_c)
+                if origin_c.trip_id == FOOTPATH_ID:
+                    # Special case for footpath connections...
+                    trip_connections = [origin_c]
+                else:    
+                    trip_connections = tt.follow_trip(origin_c)
 
                 for following_c in trip_connections:
                     if time_text_to_int(following_c.arrival_time) >= current_target_arrival_time:
@@ -516,20 +548,21 @@ def run_raptor_wrapper(start_stop, end_stop, start_time, tt, debug=False):
 def run_ultra_wrapper(start_loc, end_loc, start_time, tt, debug=False):
     final_results = []
     rr = RaptorRouter(tt)  
-    result_routes = rr.semi_ultra_route(start_loc, end_loc, start_time, tt)
+    result_routes = rr.semi_ultra_route(start_loc, end_loc, start_time, tt, debug=debug)
     if result_routes is None:
         return None
     
     last_res_connections = []
-    for i, res in enumerate(result_routes):
-        if res is None:
-            continue
-        raptor_res = RaptorResult_v2(res, tt)
-        res_connections = raptor_res.result_connections
-        if len(res_connections) == len(last_res_connections) and all([res_connections[i] == last_res_connections[i] for i in range(len(res_connections))]):
-            continue
-        final_results.append(raptor_res)
-        last_res_connections = res_connections
+    for i, round_res in enumerate(result_routes):
+        for res in round_res:
+            if len(res) == 0:
+                continue
+            raptor_res = RaptorResult_v2(res, tt)
+            res_connections = raptor_res.result_connections
+            if len(res_connections) == len(last_res_connections) and all([res_connections[i] == last_res_connections[i] for i in range(len(res_connections))]):
+                continue
+            final_results.append(raptor_res)
+            last_res_connections = res_connections
     return final_results
 
 def test_ultra_route():
@@ -540,7 +573,7 @@ def test_ultra_route():
     # glilot base - {"stop_lat": 32.145549, "stop_lon": 34.819354}
     # my home - {"stop_lat": 32.111850, "stop_lon": 34.831520}
     with Timer(text="[+] running semi ULTRA took {:.4f} seconds..."):
-            result_routes = run_ultra_wrapper({"stop_lat": 32.145549, "stop_lon": 34.819354}, {"stop_lat": 32.111850, "stop_lon": 34.831520}, "10:00:00", tt)
+            result_routes = run_ultra_wrapper({"stop_lat": 32.145549, "stop_lon": 34.819354}, {"stop_lat": 32.111850, "stop_lon": 34.831520}, "10:00:00", tt, debug=True)
         
     for r in result_routes:
         print(r)
