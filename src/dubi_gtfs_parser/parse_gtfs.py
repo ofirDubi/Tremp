@@ -14,7 +14,6 @@ PREPROCESS_SHAPE_STOP_MATCHES = False
 IS_GTFS_FOLDER = "../is_gtfs"
 IS_GTFS_OBJ = os.path.join(ARTIFACTS_FOLDER, "is_gtfs_obj.obj")
 TLV_GTFS_OBJ = os.path.join(ARTIFACTS_FOLDER, "tlv_gtfs_obj.obj")
-
 #               (min_lon, max_lon, min_lat, max_lat)
 TEL_AVIV_AREA = (34.7127, 34.9437, 31.9280, 32.2012)
 class CSVParser:
@@ -151,6 +150,13 @@ class GTFS:
         curr_path = os.path.join(self.folder_path, "routes.txt")
         parser = CSVParser(curr_path)
         routes = parser.parse(id_tag="route_id")
+
+        # add walking route
+        # add walking trip
+        walking_route = {'route_id': 'footpath', 'agency_id': '0', 'route_short_name': 'Walking', 'route_long_name': 'Walking',
+      'route_desc': '0#', 'route_type': '99', 'route_color': 'gray'}
+        routes[FOOTPATH_ID] = walking_route
+   
         return routes
 
     def _parse_calendar(self):
@@ -225,6 +231,10 @@ class GTFS:
             # Or alternativly, there is no shape_id and the headsign is a number, which is wired. 
             print_log(f"got {len(bad_trips)} bad trips out of {len(trips)} trips")
         
+        # add walking trip
+        walking_trip = {'route_id': 'footpath', 'service_id': '0', 'trip_id': 'footpath', 'trip_headsign': 'Walking', 'direction_id': '0', 'shape_id': ''}
+        trips[FOOTPATH_ID] = walking_trip
+   
         return trips
 
     def _search_circle_in_stops_or_shapes(self, stops, shapes):
@@ -613,6 +623,10 @@ def reduce_gtfs(gtfs, min_lon, max_lon, min_lat, max_lat):
     new_trips = {}
     new_stop_times = {}
     for trip in gtfs.trips.keys():
+        if trip == FOOTPATH_ID:
+            new_trips[trip] = gtfs.trips[trip]
+            # new_stop_times[trip] = []
+            continue
         keep_trip = True
         for stop in gtfs.stop_times[trip]:
             if stop["station_id"] not in new_stations:

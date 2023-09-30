@@ -1,9 +1,10 @@
 from parse_gtfs import get_is_gtfs, get_is_tlv_gtfs, GTFS
-from utils import ARTIFACTS_FOLDER, get_some_items, print_log, error_log_to_file, load_artifact, save_artifact, meters_to_degrees, BinarySearchIdx, degrees_to_meters, further_than_length
+from utils import ARTIFACTS_FOLDER, FOOTPATH_ID, get_some_items, print_log, error_log_to_file, load_artifact, save_artifact, decode_polyline, BinarySearchIdx, degrees_to_meters, further_than_length
 from display import display_connections, display_all_gtfs_stations, display_stations
 import os
 import math
 from codetiming import Timer
+from valhalla_interface import get_actor 
 
 IS_GTFS_FOLDER = "../is_gtfs"
 TLV_TIMETABLE_OBJ = os.path.join(ARTIFACTS_FOLDER, "tlv_timetable_obj.obj")
@@ -146,11 +147,13 @@ class Timetable(object):
         self.station_connections = {}
         self.trip_connections = {}
 
-        # Add 
+        # Add _walking_station_id 
+        self._walking_station_id = 0
 
         # Just copy stations and trips from gtfs
         self.stations = gtfs.stations
         self.trips = gtfs.trips
+     
         self.shapes = gtfs.shapes
         self.gtfs_instance = gtfs
         self.searchable_stations = SearchableStations(self.stations.values(),)
@@ -158,7 +161,7 @@ class Timetable(object):
 
         
     def _create_walking_station(self, station_lon_lat, name="Walking"):
-        self._walking_station_id -= 1
+        self._walking_station_id += 1
         new_statoin = {"station_id" : str(self._walking_station_id), "stop_lon": station_lon_lat["lon"], "stop_lat": station_lon_lat["lat"], "stop_name" : name} 
         self.stations[str(self._walking_station_id)] = new_statoin
         self.station_connections[str(self._walking_station_id)] = []
@@ -169,6 +172,7 @@ class Timetable(object):
         # Pretty easy.
         # First i will make the connections, then i will attribute them to the stops 
         for trip_id, trip_stops in gtfs.stop_times.items():
+            self.trip_connections[trip_id] = []
             prev_stop = trip_stops[0]
             for stop in trip_stops[1:]:
                 # At this point we count on trip_stops to be sorted by stop_sequence and departure time.
@@ -179,8 +183,8 @@ class Timetable(object):
                     self.station_connections[prev_stop["station_id"]] = []
                 
                 self.station_connections[prev_stop["station_id"]].append(connection)
-                if trip_id not in self.trip_connections:
-                    self.trip_connections[trip_id] = []
+                # if trip_id not in self.trip_connections:
+                #     self.trip_connections[trip_id] = []
                 self.trip_connections[trip_id].append(connection)
                 # self.timetable.append(connection)
                 prev_stop = stop
@@ -196,6 +200,12 @@ class Timetable(object):
     def follow_trip(self, connection, toConnection=False):
         # Receive a connection, and return a list of FOLLOWING connections that are in the same trip
         # The list will be sorted by departure time
+        if connection.trip_id not in self.trip_connections:
+            if connection.trip_id != FOOTPATH_ID:
+                # For now this should only be valid for footpaths
+                raise AssertionError("Trip id not found in trip connections")
+            return [connection]
+        
         trip_connections = self.trip_connections[connection.trip_id]
         # Find where this connection is placed in the trip
         # TODO: Change this to binary search
@@ -206,9 +216,33 @@ class Timetable(object):
         else:
             return trip_connections[connection_index:]
 
+    def _get_walking_connection_shape(self, connection : Connection):
+
+        if connection.shapes is not None:
+            return # already found shapes for this
+
+        # Do a Valhalla optimized route API request to get the walking shape
+        actor = get_actor(self)
+        start_lon_lat = {"lat": self.stations[connection.departure_stop]["stop_lat"], "lon": self.stations[connection.departure_stop]["stop_lon"]}
+        end_lon_lat = {"lat": self.stations[connection.arrival_stop]["stop_lat"], "lon": self.stations[connection.arrival_stop]["stop_lon"]}
+        query = {"locations": [start_lon_lat, end_lon_lat], "costing": "pedestrian", "directions_options": {"units":"meters"}}
+        
+        route_res = actor.optimized_route(query)
+        decoded_shapes_lon_lat = decode_polyline(route_res["trip"]["legs"][0]["shape"])
+        decoded_shapes = []
+        for i, shape in enumerate(decoded_shapes_lon_lat):
+            decoded_shapes.append({ 'shape_pt_lon' : shape[0], 'shape_pt_lat' :shape[1], 'shape_id' : connection.trip_id, 'shape_pt_sequence' : i+1})
+        connection.shapes = decoded_shapes
+
+
     def match_shapes_to_connections(self, connections):
         # Assume all connections are from the same trip here. 
         trip_id = connections[0].trip_id
+        if trip_id == FOOTPATH_ID:
+            for c in connections:
+                self._get_walking_connection_shape(c)
+            return
+        
         stop_times = self.gtfs_instance.match_stops_to_shapes_for_trip(trip_id)
         # match stop_time to connection by station
         connections_by_station = {}
