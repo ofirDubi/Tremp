@@ -1,6 +1,6 @@
 import tilemapbase
 from matplotlib import pyplot as plt
-from utils import meters_to_degrees, FOOTPATH_ID
+from utils import meters_to_degrees, FOOTPATH_ID, is_footpath
 
 def get_stations_area(stations):
     min_lon = min(stations, key=lambda x: float(x["stop_lon"]))
@@ -11,7 +11,7 @@ def get_stations_area(stations):
     return area
 
 def get_color(i, trip_id=None):
-    if trip_id == FOOTPATH_ID:
+    if is_footpath(trip_id):
         return 'gray'
     colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
     return colors[i % len(colors)]
@@ -62,7 +62,7 @@ def display_visited_stations(tt, visited_stations, start_station, end_station):
     # Plot stations as dots on the map
     ax.scatter(x,y, marker=".", color="black")
     for i, st in enumerate(visited_stations.values()):
-        ax.annotate(st[0], (x[i], y[i]))
+        ax.annotate(st.arrival_time, (x[i], y[i]))
     
     # Display start station and end station with different colors
     path = [tilemapbase.project(float(start_station["stop_lon"]), float(start_station["stop_lat"]))]

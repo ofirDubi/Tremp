@@ -15,7 +15,7 @@ class ValhallaActor():
     
     def init_actor(self, tt):
         config = valhalla.get_config(tile_extract=os.path.join(VALHALLA_FOLDER,'./custom_files/valhalla_tiles.tar'), verbose=True)
-        # TODO: figure out whay changing this in json doesn't work
+        # TODO: figure out why changing this in json doesn't work
         config["service_limits"]["pedestrian"]["max_matrix_location_pairs"] = len(tt.stations) + 100 # pad another 100 just to be sure
         self.actor = valhalla.Actor(config)
 

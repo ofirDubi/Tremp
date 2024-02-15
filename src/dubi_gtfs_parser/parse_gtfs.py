@@ -623,7 +623,7 @@ def reduce_gtfs(gtfs, min_lon, max_lon, min_lat, max_lat):
     new_trips = {}
     new_stop_times = {}
     for trip in gtfs.trips.keys():
-        if trip == FOOTPATH_ID:
+        if is_footpath(trip):
             new_trips[trip] = gtfs.trips[trip]
             # new_stop_times[trip] = []
             continue

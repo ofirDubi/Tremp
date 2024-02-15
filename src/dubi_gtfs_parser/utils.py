@@ -8,6 +8,9 @@ from typing import Callable, ClassVar, Dict, Optional
 
 FOOTPATH_ID = "footpath"
 
+def is_footpath(trip_id):
+    return str(trip_id).startswith(FOOTPATH_ID) 
+
 DEBUG_LOGS = True
 ARTIFACTS_FOLDER = "artifacts"
 log_file = f"logs\\log_{int(time.time())}.txt"
