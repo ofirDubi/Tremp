@@ -15,7 +15,7 @@ so that continuing from there by public transportaion will provide the shourtest
 I need to figure out alot of stuff - 
 1. how can i connect to Google API (or is there another possible way to achive maps data).
 2. how can i connect to bus API
-3. Should the algorith run on the phone or on a server - for starters i will do it on the server, and will develop a python client side beacuse idk how to do an app
+3. Should the algorithem run on the phone or on a server - for starters i will do it on the server, and will develop a python client side beacuse idk how to do an app
 
 ok... This problem is conceptually kind of solved - There is this thing called Multimodal transportaion. and google maps at some locations will allow you
 to include an Uber ride in your trip. So basically i need to replace that Uber ride with a ride from the starting location to a location in X min radius.
@@ -28,7 +28,7 @@ So... lets get started. First i need the data.
 ## The Database
 I'm probably gonna use OpenStreetMap
 Advantages - 
-    * open data about wayy and routes
+    * open data about ways and routes
     * can provide distance.
     * has data about bus stations
     * Has speed limit of some ways, not all of them
@@ -102,11 +102,11 @@ I think regardless of what i decide i can develop it and run it first with Graph
 *  OpenTripPlanner, TripGo and Mapzen 
 
 ## 08/17/2023 
-After viewing some lectures about SOTA algorithms, i've decided on the following steps imlementation
+After viewing some lectures about SOTA algorithms, i've decided on the following steps 
     1. Write a parser for IS gtfs feed - should be like normal gtfs with google extensions. 
         1.2. Checkpoint - present the data from gtfs on a map, to see that i know what i'm doing. 
     2. Write a RAPTOR implementation (in CPP\python) for finding best paths using my GTFS feed
-        2.2 Checkpoint - present the ebst found graph on a map.
+        2.2 Checkpoint - present the best found graph on a map.
         2.3 Integrate multi-modal trips - do this using  ULTRA-RAPTOR.
     3. Integrate Tremps as a transportation method using the following method - 
         a. Insert driver's original route (including departue-time)
@@ -146,6 +146,15 @@ I think i will start integration with pyvalhalla (python bindings for valhalla).
 After that is done, i can use Valhalla to get car routes to add to my RAPTOR.
 Note - pyvalhalla is GNU license, which means i can't use it without making my code opensource, bu Vallhalla is MIT.
 So before moving to production i need to make python bindings myselfe, or even better - just use Native valhalla.
+
+
+## 15/02/2024
+* It's been a while. War and everything. Let's see what we did last time - Is the Walking raptor works?
+* Seems like i was going for ULTRA - which has a preprocessing phase to create shortcuts which is expensive, followed by one-to-many queries from s and t to all stations.
+* I think what i decided to do is to avoid the preprocessing for now, and only do the one-to-many. And what did i do with walking between nearby stations? Yes
+* Ok so i have something which is running, but i do not think it yields optimal results. I need to examine it with mooveit.
+Ok, i've verified that the walk to start stations is performed currectly. 
+
 
 
 # to generate new tiles (shouldn't be done much)

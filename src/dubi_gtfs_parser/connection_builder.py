@@ -1,5 +1,5 @@
 from parse_gtfs import get_is_gtfs, get_is_tlv_gtfs, GTFS
-from utils import ARTIFACTS_FOLDER, FOOTPATH_ID, get_some_items, print_log, error_log_to_file, load_artifact, save_artifact, decode_polyline, BinarySearchIdx, degrees_to_meters, further_than_length
+from utils import ARTIFACTS_FOLDER, FOOTPATH_ID, is_footpath, get_some_items, print_log, error_log_to_file, load_artifact, save_artifact, decode_polyline, BinarySearchIdx, degrees_to_meters, further_than_length
 from display import display_connections, display_all_gtfs_stations, display_stations
 import os
 import math
@@ -162,10 +162,10 @@ class Timetable(object):
         
     def _create_walking_station(self, station_lon_lat, name="Walking"):
         self._walking_station_id += 1
-        new_statoin = {"station_id" : str(self._walking_station_id), "stop_lon": station_lon_lat["lon"], "stop_lat": station_lon_lat["lat"], "stop_name" : name} 
-        self.stations[str(self._walking_station_id)] = new_statoin
+        new_station = {"station_id" : str(self._walking_station_id), "stop_lon": station_lon_lat["lon"], "stop_lat": station_lon_lat["lat"], "stop_name" : name} 
+        self.stations[str(self._walking_station_id)] = new_station
         self.station_connections[str(self._walking_station_id)] = []
-        return new_statoin
+        return new_station
     
     def build_timetable(self, gtfs):
         # A connection is besically two following stations, so each pair of stops will be a connection.
@@ -201,7 +201,7 @@ class Timetable(object):
         # Receive a connection, and return a list of FOLLOWING connections that are in the same trip
         # The list will be sorted by departure time
         if connection.trip_id not in self.trip_connections:
-            if connection.trip_id != FOOTPATH_ID:
+            if not is_footpath(connection.trip_id):
                 # For now this should only be valid for footpaths
                 raise AssertionError("Trip id not found in trip connections")
             return [connection]
@@ -238,7 +238,7 @@ class Timetable(object):
     def match_shapes_to_connections(self, connections):
         # Assume all connections are from the same trip here. 
         trip_id = connections[0].trip_id
-        if trip_id == FOOTPATH_ID:
+        if is_footpath(trip_id):
             for c in connections:
                 self._get_walking_connection_shape(c)
             return
