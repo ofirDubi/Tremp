@@ -154,7 +154,8 @@ So before moving to production i need to make python bindings myselfe, or even b
 * I think what i decided to do is to avoid the preprocessing for now, and only do the one-to-many. And what did i do with walking between nearby stations? Yes
 * Ok so i have something which is running, but i do not think it yields optimal results. I need to examine it with mooveit.
 Ok, i've verified that the walk to start stations is performed currectly. 
-* I need to improve a bit my debugging - i need to get an easy way to check for timings of a certain station. 
+* I need to improve a bit my debugging - i need to get an easy way to check for timings of a certain station. - Did it
+* I suspect that my routing continues to traverse to stations which i don't have any point going to, because if time is above limit which it takes me to reach the target i shouldn't persue more stations, but i get tons of stations still in the last raptor round. 
 
 
 # to generate new tiles (shouldn't be done much)
