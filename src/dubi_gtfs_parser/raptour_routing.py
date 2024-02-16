@@ -12,14 +12,14 @@ from valhalla_interface import get_actor
 class RaptorResult_v2():
     def __init__(self, result_route, tt):
         """
-        @result_route - a list of tuples (station_id, [connections]), where the last connaction in the connaction's list is the one arriving at the current station.
+        @result_route - a list of tuples (station_id, [connections]), where the last connection in the connection's list is the one arriving at the current station.
         # Note - the first element in the list is the first station, and the last element is the last station
         @tt - timetable object
         """
         # Departure time is the departure time from the first station
         self.departure_time = result_route[0][1][0].departure_time
         # Arrival time is the arrival time to the last station, should be walk connection
-        self.arrival_time = time_int_to_text(result_route[-1][1][-1].arrival_time)
+        self.arrival_time = result_route[-1][1][-1].arrival_time
         self.result_route = result_route
         self.tt = tt
         self.result_connections = []
@@ -217,7 +217,8 @@ class RaptorRouter(object):
             tt.station_connections[start_station["station_id"]].append(c)
 
         # Call normal raptor_route, with the exception that now we can relax end footpaths
-        return raptor_route(start_station["station_id"], end_station["station_id"], start_time, tt, end_footpath_connections=end_footpath_connections,debug=debug)
+        return raptor_route(start_station["station_id"], end_station["station_id"], start_time, tt,
+                             end_footpath_connections=end_footpath_connections, limit_walking_time=limit_walking_time, debug=debug)
 
     
     # def _traverse_route_2(self, visited_stations, end_station, start_station, stations_to_end):
@@ -256,8 +257,8 @@ def _traverse_station_v2(station_to_traverse : str, visited_stations : dict[str:
     # Now i need to iterate through visited_stations, and find the path to this station from the start station
     #end_arrival_time, prev_station, end_connection, prev_connection = visited_stations[end_station]
     result_route = []
-    final_walk_connection = Connection(station_to_traverse, end_station, visited_stations[station_to_traverse].arrival_time,
-             visited_stations[station_to_traverse].walking_arrival_time_to_end, FOOTPATH_ID)
+    final_walk_connection = Connection(station_to_traverse, end_station, time_int_to_text(visited_stations[station_to_traverse].arrival_time),
+             time_int_to_text(visited_stations[station_to_traverse].walking_arrival_time_to_end), FOOTPATH_ID)
     result_route.insert(0, (end_station, [final_walk_connection]))
     prev_station = station_to_traverse
     while prev_station != start_station:
@@ -397,7 +398,7 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
             print("a")
 
         # TODO: Relax footpaths from each new station to nearby stations, thus allowing transitions to other stations.
-        # This requires calculating shortcurs, which is heavy precomputation, so for now i'll skip it :)))
+        # This requires calculating shortcuts, which is heavy precomputation, so for now i'll skip it :)))
         new_stations = next_round_new_stations
         next_round_new_stations = {}
 

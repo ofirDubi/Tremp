@@ -131,8 +131,10 @@ class Connection(object):
     def __init__(self, departure_stop, arrival_stop, departure_time, arrival_time, trip_id):
         self.departure_stop = departure_stop # actual stop obj
         self.arrival_stop = arrival_stop # actual stop obj
-        self.departure_time = departure_time
-        self.arrival_time = arrival_time
+        if type(departure_time) != str or type(arrival_time) != str:
+            raise AssertionError("departure_time and arrival_time should be strings")
+        self.departure_time = departure_time # in text format hh:mm:ss
+        self.arrival_time = arrival_time # in text format hh:mm:ss
         self.trip_id = trip_id
         self.shapes = None
         # self.shapes = shapes # this is used to represent the connection on a map. 
