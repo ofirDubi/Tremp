@@ -277,7 +277,7 @@ def display_RaptorResult(raptor_result):
     ax = display_connections(raptor_result.tt, raptor_result.result_connections, no_show=True)
     
     # Display the line transfers at designated stations, skip last station
-    stations = [raptor_result.tt.stations[r[0]] for r in raptor_result.result_route[:-1]]
+    stations = [raptor_result.tt.stations[r[0]] for r in raptor_result.result_route]
     # Also get last arrival stop
     longs = (float(s["stop_lon"]) for s in stations)
     lats = (float(s["stop_lat"]) for s in stations)
@@ -287,15 +287,21 @@ def display_RaptorResult(raptor_result):
     
     for i, st in enumerate(stations):
         print(x,y)
-        if i == 0:
-            ax.annotate(raptor_result.bus_lines[i], (x[i], y[i]), color="red")
+        # raptor_result.result_route is a tuple of (station, [connections])
+        arrival_time = raptor_result.result_route[i][1][-1].arrival_time 
+        station_str = ""
+        if i == len(stations) - 1:
+            station_str = f"{raptor_result.bus_lines[i]}, {arrival_time}"
         else:
-            ax.annotate(f"{raptor_result.bus_lines[i-1]}->{raptor_result.bus_lines[i]}", (x[i], y[i]), color="red")
-
+            departure_time = raptor_result.result_route[i+1][1][0].departure_time
+            station_str = f"({raptor_result.bus_lines[i]}, {arrival_time}) -> ({raptor_result.bus_lines[i+1]}, {departure_time})"
+            
+        ax.annotate(station_str, (x[i], y[i]), color="red")
     # Add description of this result on top
     ax.text(.01, .99, str(raptor_result), ha='left', va='top', transform=ax.transAxes)
     plt.show()
     print("showed result")
+
 def display_connections(timetable, connections, no_show=False):
     # Display a route on a map using tilemapbase
     
