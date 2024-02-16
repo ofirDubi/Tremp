@@ -117,3 +117,13 @@ def decode_polyline(encoded):
     decoded.append([float('%.6f' % (ll[1] * inv)), float('%.6f' % (ll[0] * inv))])
   #hand back the list of coordinates
   return decoded
+
+def bus_line_from_trip_id(tt, trip_id):
+    return tt.gtfs_instance.routes[tt.trips[trip_id]["route_id"]]["route_short_name"]
+
+
+def get_station_connections_as_lines(tt, station_id):
+    res = []
+    for c in tt.station_connections[station_id]:
+        res.append((c,  bus_line_from_trip_id(tt, c.trip_id)))
+    return res
