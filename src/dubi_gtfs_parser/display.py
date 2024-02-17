@@ -116,6 +116,9 @@ def display_all_gtfs_stations(gtfs_instance, plot_chance=1, marker_station=None,
     plt.show()
 
 def display_stations(stations, marker_station=None, radius=0, fill=False, direct=False):
+    """
+    * stations - list of stations to display
+    """
     area = get_stations_area(stations)
     plotter, ax = initiate_plotter(area)
     longs = (float(s["stop_lon"]) for s in stations)
@@ -301,6 +304,8 @@ def display_RaptorResult(raptor_result):
     ax.text(.01, .99, str(raptor_result), ha='left', va='top', transform=ax.transAxes)
     plt.show()
     print("showed result")
+
+
 
 def display_connections(timetable, connections, no_show=False):
     # Display a route on a map using tilemapbase

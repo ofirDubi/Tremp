@@ -154,9 +154,20 @@ So before moving to production i need to make python bindings myselfe, or even b
 * I think what i decided to do is to avoid the preprocessing for now, and only do the one-to-many. And what did i do with walking between nearby stations? Yes
 * Ok so i have something which is running, but i do not think it yields optimal results. I need to examine it with mooveit.
 Ok, i've verified that the walk to start stations is performed currectly. 
-* I need to improve a bit my debugging - i need to get an easy way to check for timings of a certain station. - Did it
-* I suspect that my routing continues to traverse to stations which i don't have any point going to, because if time is above limit which it takes me to reach the target i shouldn't persue more stations, but i get tons of stations still in the last raptor round. 
+* I need to improve a bit my debugging - i need to get an easy way to check for timings of a certain station. - Did it.
+* I suspect that my routing continues to traverse to stations which i don't have any point going to, because if time is above limit which it takes me to reach the target i shouldn't investigate more stations, but i get tons of stations still in the last raptor round.  - Did it.
 
+## 16/02/2024
+* What next? my ULTRA works fine enough i think, might find some more bugs in it later but it's good enough i can work with it.
+* Two options moving forward - relax footpaths between stations, or add car as a route. i'm afraid that without relaxing the footpaths
+  Adding a car won't improve much on my current results, because i won't be able to cross the road to the other side.  
+* So it's decided - i need to relax them footpaths!!!
+* How to do this - i should do it with the preprocessing shortcut path mentioned in the ULTRA video, i really need to reiterate it. 
+* What i really need to understand is how to relax footpaths in raptor. only then it will be possible for me to do it
+
+## 17/02/2024
+* Ok, i've added precomputation to get footpath time from each station to each other station in one KM radius from it!
+* Next step - use this information inside raptor to integrate walking!
 
 # to generate new tiles (shouldn't be done much)
 1. put ISR israel-and-palestine-latest.osm.pbf in custom_files
