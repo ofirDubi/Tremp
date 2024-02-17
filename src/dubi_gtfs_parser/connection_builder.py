@@ -1,6 +1,6 @@
 from parse_gtfs import get_is_gtfs, get_is_tlv_gtfs, GTFS
 from utils import ARTIFACTS_FOLDER, FOOTPATH_ID, is_footpath, get_some_items, print_log, error_log_to_file, load_artifact, save_artifact, decode_polyline, BinarySearchIdx, degrees_to_meters, further_than_length
-from display import display_connections, display_all_gtfs_stations, display_stations
+from display import display_connections, display_all_gtfs_stations, display_stations, display_connections
 import os
 import math
 from codetiming import Timer
@@ -159,7 +159,8 @@ class Timetable(object):
         self.shapes = gtfs.shapes
         self.gtfs_instance = gtfs
         self.searchable_stations = SearchableStations(self.stations.values(),)
-        self.build_timetable(gtfs)
+        self._build_timetable(gtfs)
+        self.stations_footpaths = self.build_station_footpaths()
 
         
     def _create_walking_station(self, station_lon_lat, name="Walking"):
@@ -169,7 +170,85 @@ class Timetable(object):
         self.station_connections[str(self._walking_station_id)] = []
         return new_station
     
-    def build_timetable(self, gtfs):
+    def _get_walking_connection_shape(self, connection : Connection):
+
+        if connection.shapes is not None:
+            return # already found shapes for this
+
+        # Do a Valhalla optimized route API request to get the walking shape
+        actor = get_actor(self)
+        start_lon_lat = {"lat": self.stations[connection.departure_stop]["stop_lat"], "lon": self.stations[connection.departure_stop]["stop_lon"]}
+        end_lon_lat = {"lat": self.stations[connection.arrival_stop]["stop_lat"], "lon": self.stations[connection.arrival_stop]["stop_lon"]}
+        query = {"locations": [start_lon_lat, end_lon_lat], "costing": "pedestrian", "directions_options": {"units":"meters"}}
+        
+        route_res = actor.optimized_route(query)
+        decoded_shapes_lon_lat = decode_polyline(route_res["trip"]["legs"][0]["shape"])
+        decoded_shapes = []
+        for i, shape in enumerate(decoded_shapes_lon_lat):
+            decoded_shapes.append({ 'shape_pt_lon' : shape[0], 'shape_pt_lat' :shape[1], 'shape_id' : connection.trip_id, 'shape_pt_sequence' : i+1})
+        connection.shapes = decoded_shapes
+    
+    def build_station_footpaths(self, nearby_station_radius=1000, max_walking_distance = 1.2):
+        '''
+        This is a preprocessing step for the timetable.
+        In here we will create footpath connections between stations that are close to each other.
+        This will be saved in a special filed as a dict by station, and will be used in RAPTOR in the "Relax footpath" phase.
+        In order to get results in a sensible time, limit search radius to 'nearby_station_radium'.
+        In production we can enlarge this.
+        How we will do it - 
+        For each station, We will use SearchableStation class to find nearby stations, and use Valhalla one-to-many API to find walking paths between them.
+        In concept this preprocessing saves me from the need later to run this on every station every query.
+        
+        * max_walking_distance - in KM, because this is how results from valhalla return
+        '''
+
+        # Note that also here i want to save time sending batches to valhalla, so for each station i will take all of the station in 1 km radius, then find many to many on a  2 KM radius.
+        
+        # This is the result. station -> [(station, path)]
+        station_to_station_footpaths = {}
+
+        # le'ts just go station by station
+        for station in self.stations.values():
+            if station['station_id'] in station_to_station_footpaths:
+                # We already did this station with some other batch
+                continue
+            # Find nearby stations
+            # originally it was 1 and 2, but my PC couldn't carry it so i lower it so /2 and 1.5
+            factor = 1
+            batch_stations  = []
+            batch_stations = self.searchable_stations.search_nearby_stations(station, nearby_station_radius / factor)
+            while len(batch_stations) > 20 and factor < 10: 
+                # If i got more than 20 this will be bad when i increase the amount i guess, so  
+                factor +=1
+                batch_stations = self.searchable_stations.search_nearby_stations(station, nearby_station_radius / factor)
+
+            nearby_stations = self.searchable_stations.search_nearby_stations(station, nearby_station_radius + nearby_station_radius / factor)
+            batch_stations_as_locations = [{"lat": s["stop_lat"], "lon": s["stop_lon"]} for s in batch_stations]
+            nearby_stations_as_locations = [{"lat": s["stop_lat"], "lon": s["stop_lon"]} for s in nearby_stations]
+            
+            actor = get_actor(self)
+            query = {"sources" :batch_stations_as_locations, "targets": nearby_stations_as_locations, "costing": "pedestrian"}
+            # print(f"[+] parsing query - {len(batch_stations_as_locations), len(nearby_stations_as_locations)}")
+            source_footpath_connections = []
+            source_footpath_connections = actor.matrix(query)
+            for i, st in enumerate(batch_stations):
+                footpaths = []
+                for f in source_footpath_connections['sources_to_targets'][i]:
+                    if f["distance"] > max_walking_distance:
+                        continue
+                    footpaths.append({"station_id": nearby_stations[f["to_index"]]["station_id"], "distance": f["distance"], "time": f["time"]})
+                station_to_station_footpaths[st["station_id"]] = footpaths             
+                #sts = [self.stations[fp["station_id"]] for fp in footpaths]
+                #display_station_footpaths(self, st, footpaths)
+                #display_stations(self, sts)
+
+            # For tests break now
+            # call valhalla many to many
+        print("finished finding footpaths between stations!")
+        return station_to_station_footpaths
+
+
+    def _build_timetable(self, gtfs):
         # A connection is besically two following stations, so each pair of stops will be a connection.
         # Pretty easy.
         # First i will make the connections, then i will attribute them to the stops 
@@ -217,25 +296,6 @@ class Timetable(object):
             return trip_connections[:connection_index+1]
         else:
             return trip_connections[connection_index:]
-
-    def _get_walking_connection_shape(self, connection : Connection):
-
-        if connection.shapes is not None:
-            return # already found shapes for this
-
-        # Do a Valhalla optimized route API request to get the walking shape
-        actor = get_actor(self)
-        start_lon_lat = {"lat": self.stations[connection.departure_stop]["stop_lat"], "lon": self.stations[connection.departure_stop]["stop_lon"]}
-        end_lon_lat = {"lat": self.stations[connection.arrival_stop]["stop_lat"], "lon": self.stations[connection.arrival_stop]["stop_lon"]}
-        query = {"locations": [start_lon_lat, end_lon_lat], "costing": "pedestrian", "directions_options": {"units":"meters"}}
-        
-        route_res = actor.optimized_route(query)
-        decoded_shapes_lon_lat = decode_polyline(route_res["trip"]["legs"][0]["shape"])
-        decoded_shapes = []
-        for i, shape in enumerate(decoded_shapes_lon_lat):
-            decoded_shapes.append({ 'shape_pt_lon' : shape[0], 'shape_pt_lat' :shape[1], 'shape_id' : connection.trip_id, 'shape_pt_sequence' : i+1})
-        connection.shapes = decoded_shapes
-
 
     def match_shapes_to_connections(self, connections):
         # Assume all connections are from the same trip here. 
@@ -296,22 +356,22 @@ def test_searchable_stations():
     with Timer(text="searching for stations near start station with 200 radius took {:.4f} seconds..."):
         nearby_stations_200 = tt.searchable_stations.search_nearby_stations(start_station, 200)
     print(f"got {len(nearby_stations_200)} stations")
-    display_stations(nearby_stations_200, marker_station=start_station, radius=200)
+    # display_stations(nearby_stations_200, marker_station=start_station, radius=200)
 
     with Timer(text="searching for stations near start station with 500 radius took {:.4f} seconds..."):
         nearby_stations_500 = tt.searchable_stations.search_nearby_stations(start_station, 500)
     print(f"got {len(nearby_stations_500)} stations")
-    display_stations(nearby_stations_500, start_station, radius=500)
+    # display_stations(nearby_stations_500, start_station, radius=500)
     
     with Timer(text="searching for stations near start station with 1000 radius took {:.4f} seconds..."):
         nearby_stations_1000 = tt.searchable_stations.search_nearby_stations(start_station, 1000)
     print(f"got {len(nearby_stations_1000)} stations")
-    display_stations(nearby_stations_1000, start_station, radius=1000)
+    # display_stations(nearby_stations_1000, start_station, radius=1000)
 
     with Timer(text="searching for stations near start station with 10000 radius took {:.4f} seconds..."):
         nearby_stations_10000 = tt.searchable_stations.search_nearby_stations(start_station, 10000)
     print(f"got {len(nearby_stations_10000)} stations")
-    display_stations(nearby_stations_10000, start_station, radius=10000)
+    # display_stations(nearby_stations_10000, start_station, radius=10000)
 
 def test_tlv_timetable():
     tt = get_tlv_timetable()
@@ -328,9 +388,35 @@ def test_tlv_timetable():
     display_connections(tt, following_trip)
     print("done!")
 
+def test_stations_footpaths():
+    tt = get_tlv_timetable()
+    # print(f"footpaths - {tt.stations_footpaths}")
+    with Timer(text="[+] searching footpaths from stations took {:.4f} seconds..."):
+        tt.stations_footpaths = tt.build_station_footpaths()
+    save_artifact(tt, TLV_TIMETABLE_OBJ)
+
+def display_station_footpaths(tt, station, station_footpaths):
+    # Just fake connections for each footpath and display them as connections
+    connections = []
+    
+    for i, footpath in enumerate(station_footpaths):
+        # create a new trip for this walk
+        # create a connection from start location to this station
+        trip_id = FOOTPATH_ID + "_" + str(i)
+        tt.trips[trip_id] = tt.trips[FOOTPATH_ID]  
+
+        c = Connection(station["station_id"], footpath["station_id"], "00:00:00",
+            "00:00:00", trip_id)
+        connections.append(c)
+    display_connections(tt, connections)
+
+
+
 def main():
-    test_searchable_stations()
+    test_stations_footpaths()
+    # test_searchable_stations()
     # test_tlv_timetable()
+
 
 if __name__ == '__main__':
     main()

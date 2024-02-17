@@ -347,7 +347,7 @@ def test_ultra_route():
     # my home - {"stop_lat": 32.111850, "stop_lon": 34.831520}
     with Timer(text="[+] running semi ULTRA took {:.4f} seconds..."):
             result_routes = run_ultra_wrapper({"stop_lat": 32.145549, "stop_lon": 34.819354}, {"stop_lat": 32.111850, "stop_lon": 34.831520}, "10:00:00", 
-                                              tt, limit_walking_time=60*15, debug=True)
+                                              tt, limit_walking_time=60*15, debug=False)
         
     for r in result_routes:
         print(r)
