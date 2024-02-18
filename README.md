@@ -70,7 +70,28 @@ If i want a quick POC, i can use the following -
 
 * An interesting thing to see is how are multi-modal route serching is done, and i can just copy this insetead of theorising about stuff. options are
 
-Steps for 7/12/2023:
+# The Algorithm - with a Car (18/02/2024)
+* A naive approach which i can implement now is to take the fastest car route from A to B, and insert it to the timetable as some line 
+* I could implement an X minute detour by using an Isochrone, and adding all the stops in the Isochrone's range to possible stops the car can stop in.
+* After doing that when doing my RAPTOR search for each stop i will check if i can join the car trip now, and if so treat this as another trip to be investigated in this round.
+
+* This method is not good however, as it only considers the faster route the car can go in.
+* There could be a situation where another route is 5 min slower, but is not in the 5 min Isochrone of this route.
+* In order to solve this i will do the following - 
+1. search the fastest car route from A to B. set it to X. say we have an agreed deviation time of 5.
+2. do a one-to-many search from A to every station, and many-to-one from very station to B.
+    a. This query can be time-limited - the combined journy must be shorter than X+5, so at the least we can limit each of them by X+5.
+3. Prune all of the irrelevant stations - only keep station S if A->S->B takes less than X+5 time. 
+4. At the end we will remain with station that it is possible for the car to pass through.
+
+Note that this provides a solution for the case in which the passenger either departs from A or arrives at B, and need to be picked up or dropped of.
+Alas, this is not always the case. Sometimes i'd like a ride from one bus or train station to another.
+E.G. i wanna get from my house in TLV to a house in BS, and someone is going form TLV to BS by car. 
+But i think i can build around that and then improve it to match all scenarios 
+
+
+
+## Steps for 7/12/2023:
  - done - Get Location data of TLV instead of berlin (for fun)
  - done -Setup IDE
    - Get GTFS data of TLV.
@@ -78,7 +99,7 @@ Steps for 7/12/2023:
         It complains that the GTFS is broken, and it does so only after 30 min of loading...
  - Read about multi-modal routing
 
-Steps for 13/7/2023:
+## Steps for 13/7/2023:
     Following yesterday, i believe that GraphHopper will not work out of the box for me, so i'll try to use Valhalla.
     Maybe i should consider trying to find something that works well for public transportaion first.
 
@@ -174,6 +195,7 @@ Ok, i've verified that the walk to start stations is performed currectly.
 * Ok i did it!
 * Note that i came across a problem wit wrap around of 24H clock... i dealt with it in a very ugly way, TODO actually deal with it.
 * Now i think i'm ready to add Car routing!
+
 
 
 # to generate new tiles (shouldn't be done much)
