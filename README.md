@@ -169,6 +169,13 @@ Ok, i've verified that the walk to start stations is performed currectly.
 * Ok, i've added precomputation to get footpath time from each station to each other station in one KM radius from it!
 * Next step - use this information inside raptor to integrate walking!
 
+## 18/02/2024
+* Steps for today - implement footpath relaxiation in RAPTOR
+* Ok i did it!
+* Note that i came across a problem wit wrap around of 24H clock... i dealt with it in a very ugly way, TODO actually deal with it.
+* Now i think i'm ready to add Car routing!
+
+
 # to generate new tiles (shouldn't be done much)
 1. put ISR israel-and-palestine-latest.osm.pbf in custom_files
 2. docker run --rm -dt --name valhalla_gis-ops -p 8002:8002 -v %cd%/custom_files:/custom_files ghcr.io/gis-ops/docker-valhalla/valhalla:latest
