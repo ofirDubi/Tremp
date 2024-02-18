@@ -121,7 +121,7 @@ class RaptorRouter(object):
 
         # Call normal raptor_route, with the exception that now we can relax end footpaths
         return raptor_route(start_station["station_id"], end_station["station_id"], start_time, tt,
-                             end_footpath_connections=end_footpath_connections, limit_walking_time=limit_walking_time, debug=debug)
+                             end_footpath_connections=end_footpath_connections, relax_footpaths=relax_footpaths, limit_walking_time=limit_walking_time, debug=debug)
 
     
 @dataclass
@@ -147,7 +147,7 @@ def _traverse_station(station_to_traverse : str, visited_stations : dict[str: RV
     # result_route.insert(0, (prev_station, []))
     return result_route
 
-def raptor_route(start_station, end_station, start_time, tt, end_footpath_connections=None, limit_walking_time=1* 60 * 60, debug=False):
+def raptor_route(start_station, end_station, start_time, tt, end_footpath_connections=None, relax_footpaths=True, limit_walking_time=1* 60 * 60, limit_mid_walking_time= 60*6, debug=False):
     """
     Route from station to station
     @start_station - the station to start from
@@ -190,11 +190,11 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
    
     # visited_routes is a dict of routes - Do not iterate the same route twice
     visited_routes = {}
-   
+    start_time_int = time_text_to_int(start_time)
     # visited_stations is a dict of station_id -> RVisidetStation(arrival_time, leading_connections, walking_arrival_time_to_end)
-    visited_stations = {start_station : RVisidetStation(time_text_to_int(start_time), [], time_text_to_int(start_time) + stations_to_end[start_station])}
+    visited_stations = {start_station : RVisidetStation(start_time_int, [], start_time_int + stations_to_end[start_station])}
 
-    new_stations = {start_station: time_text_to_int(start_time)}
+    new_stations = {start_station: start_time_int}
     next_round_new_stations = {}
     total_result_routes = []
     MAX_ROUNDS = 4
@@ -217,7 +217,8 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
             # But it would be difficult because i only calculate current_target_arrival_time at the end of each round. if i'll build it dynamically i might save some time.
             # Maybe a greedy approach for each round will improve this, but for now it's good enough. 
             MAX_TIME_THRESHOLD = current_target_arrival_time + limit_walking_time
-            if st_arrival_time > MAX_TIME_THRESHOLD:
+            if st_arrival_time > MAX_TIME_THRESHOLD or \
+                st_arrival_time < start_time_int: # check wrap around of 24h clock  TODO: wraparound problem
                 continue
 
             first_connection = BinarySearchIdx(tt.station_connections[station], st_arrival_time, key=lambda x: time_text_to_int(x.departure_time))
@@ -232,7 +233,8 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
 
                 # Again here i need to check if the arrival time is later than the current best arrival time
                 # Break here if not, since connections are sorted by departure time from the station
-                if time_text_to_int(origin_c.departure_time) > MAX_TIME_THRESHOLD:
+                if time_text_to_int(origin_c.departure_time) > MAX_TIME_THRESHOLD or\
+                    time_text_to_int(origin_c.departure_time) < start_time_int: # TODO:  wraparound problem
                     break
 
                 visited_routes[origin_c.trip_id] = True
@@ -241,7 +243,9 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
 
                 for conn_idx, following_c in enumerate(trip_connections):
                     curr_arrival_time = time_text_to_int(following_c.arrival_time) 
-                    if curr_arrival_time >= current_target_arrival_time:
+                    if curr_arrival_time >= current_target_arrival_time or\
+                        curr_arrival_time < start_time_int: # TODO: wraparound problem
+
                         # We can't improve the arrival time to this station, so we can stop searching this trip
                         break
                     if following_c.arrival_stop not in visited_stations or \
@@ -286,15 +290,45 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
         total_result_routes.append(round_res_routes)
         if debug:
             print("round - ", r)
-            print("visited stations - ", visited_stations)
-            print("new stations - ", new_stations)
-            # Disply visited stations. 
+            # print("visited stations - ", visited_stations)
+            # print("new stations - ", next_round_new_stations)
+            # # Disply visited stations. 
             print(round_res_routes)
-            print(f"best walking time - {time_int_to_text(current_target_arrival_time)}")
+            print(f"best walking time for round {r} - {time_int_to_text(current_target_arrival_time)}")
+            print(f"len of visited stations - {len(visited_stations)}, len of new stations - {len(next_round_new_stations)}")
             display_visited_stations(tt, visited_stations, start_station=tt.stations[start_station], end_station=tt.stations[end_station])
             print("break")
         # TODO: Relax footpaths from each new station to nearby stations, thus allowing transitions to other stations.
         # This requires calculating shortcuts, which is heavy precomputation, so for now i'll skip it :)))
+        # Note that it is ok to relax footpaths after getting this rounds result, because this won't affect the result. 
+        if relax_footpaths:
+            # Essentially for each new station
+            tmp_new_stations = {}
+            for station in next_round_new_stations.keys():
+                for arrival_stop in tt.stations_footpaths[station]:
+                    new_time = next_round_new_stations[station] + arrival_stop["time"]
+                    if  arrival_stop["time"] > limit_mid_walking_time or \
+                        new_time > current_target_arrival_time:
+                        # footpaths are sorted by time, so if this is too much no point looking at more.
+                        break
+
+                    if arrival_stop["station_id"] not in visited_stations or \
+                        new_time < visited_stations[arrival_stop["station_id"]].arrival_time:
+                        # It is possible to improve the arrival time with walking.
+                        # Insert a new Walking connection here. 
+                        trip_id = FOOTPATH_ID + "_" + station + "_" + arrival_stop["station_id"]
+                        tt.trips[trip_id] = tt.trips[FOOTPATH_ID]  
+                        c = Connection(station, arrival_stop["station_id"], time_int_to_text(next_round_new_stations[station]),
+                            time_int_to_text(new_time), trip_id)  
+                        visited_stations[arrival_stop["station_id"]] = RVisidetStation(new_time, [c], new_time + stations_to_end[arrival_stop["station_id"]])
+                        tmp_new_stations[arrival_stop["station_id"]] = new_time
+            next_round_new_stations.update(tmp_new_stations)
+
+            if debug:
+                print(f"len of visited stations - {len(visited_stations)}, len of new stations - {len(next_round_new_stations)}")
+                display_visited_stations(tt, visited_stations, start_station=tt.stations[start_station], end_station=tt.stations[end_station])
+                print("break")
+
         new_stations = next_round_new_stations
         next_round_new_stations = {}
 
@@ -318,10 +352,10 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
 # target_stop = 29462? 14003?
 # base_stop = 44420
 # base_stop = 44420
-def run_ultra_wrapper(start_loc, end_loc, start_time, tt, limit_walking_time=60*60, debug=False):
+def run_ultra_wrapper(start_loc, end_loc, start_time, tt, relax_footpaths=True, limit_walking_time=60*60, debug=False):
     final_results = []
     rr = RaptorRouter(tt)  
-    result_routes = rr.semi_ultra_route(start_loc, end_loc, start_time, tt, limit_walking_time=limit_walking_time, debug=debug)
+    result_routes = rr.semi_ultra_route(start_loc, end_loc, start_time, tt, relax_footpaths=relax_footpaths, limit_walking_time=limit_walking_time, debug=debug)
     if result_routes is None:
         return None
     
@@ -346,9 +380,17 @@ def test_ultra_route():
     # glilot base - {"stop_lat": 32.145549, "stop_lon": 34.819354}
     # my home - {"stop_lat": 32.111850, "stop_lon": 34.831520}
     with Timer(text="[+] running semi ULTRA took {:.4f} seconds..."):
-            result_routes = run_ultra_wrapper({"stop_lat": 32.145549, "stop_lon": 34.819354}, {"stop_lat": 32.111850, "stop_lon": 34.831520}, "10:00:00", 
-                                              tt, limit_walking_time=60*15, debug=False)
-        
+            result_routes = run_ultra_wrapper({"stop_lat": 32.145549, "stop_lon": 34.819354}, {"stop_lat": 32.111850, "stop_lon": 34.831520}, "10:20:00", 
+                                              tt, relax_footpaths=True, limit_walking_time=60*15, debug=False)
+            
+    # with Timer(text="[+] running semi ULTRA took {:.4f} seconds..."):
+    #     result_routes = run_ultra_wrapper({"stop_lat": 32.145549, "stop_lon": 34.819354}, {"stop_lat": 32.111850, "stop_lon": 34.831520}, "10:30:00", 
+    #                                         tt, relax_footpaths=True, limit_walking_time=60*15, debug=False)
+
+    # with Timer(text="[+] running semi ULTRA took {:.4f} seconds..."):
+    #         result_routes = run_ultra_wrapper({"stop_lat": 32.145549, "stop_lon": 34.819354}, {"stop_lat": 32.111850, "stop_lon": 34.831520}, "10:00:00", 
+    #                                           tt, relax_footpaths=False, limit_walking_time=60*15, debug=False)
+      
     for r in result_routes:
         print(r)
         r.display_result()

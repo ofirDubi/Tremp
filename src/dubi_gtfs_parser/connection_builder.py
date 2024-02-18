@@ -212,6 +212,9 @@ class Timetable(object):
             if station['station_id'] in station_to_station_footpaths:
                 # We already did this station with some other batch
                 continue
+            # initiate to empty list
+            station_to_station_footpaths[station["station_id"]] = []
+
             # Find nearby stations
             # originally it was 1 and 2, but my PC couldn't carry it so i lower it so /2 and 1.5
             factor = 1
@@ -234,10 +237,12 @@ class Timetable(object):
             for i, st in enumerate(batch_stations):
                 footpaths = []
                 for f in source_footpath_connections['sources_to_targets'][i]:
-                    if f["distance"] > max_walking_distance:
+                    if f["distance"] > max_walking_distance or nearby_stations[f["to_index"]]["station_id"] == st["station_id"]:
                         continue
                     footpaths.append({"station_id": nearby_stations[f["to_index"]]["station_id"], "distance": f["distance"], "time": f["time"]})
-                station_to_station_footpaths[st["station_id"]] = footpaths             
+                
+                # Sort by walking time 
+                station_to_station_footpaths[st["station_id"]] = sorted(footpaths, key=lambda x: x["time"])             
                 #sts = [self.stations[fp["station_id"]] for fp in footpaths]
                 #display_station_footpaths(self, st, footpaths)
                 #display_stations(self, sts)
