@@ -1,5 +1,5 @@
 from parse_gtfs import get_is_gtfs, get_is_tlv_gtfs, GTFS
-from utils import ARTIFACTS_FOLDER, FOOTPATH_ID, is_footpath, get_some_items, print_log, error_log_to_file, load_artifact, save_artifact, decode_polyline, BinarySearchIdx, degrees_to_meters, further_than_length
+from utils import ARTIFACTS_FOLDER, FOOTPATH_ID, is_footpath, is_car_route, get_some_items, print_log, error_log_to_file, load_artifact, save_artifact, decode_polyline, BinarySearchIdx, degrees_to_meters, further_than_length
 from display import display_connections, display_all_gtfs_stations, display_stations, display_connections
 import os
 import math
@@ -170,7 +170,7 @@ class Timetable(object):
         self.station_connections[str(self._walking_station_id)] = []
         return new_station
     
-    def _get_walking_connection_shape(self, connection : Connection):
+    def _get_route_connection_shape(self, connection : Connection, costing="pedestrian"):
 
         if connection.shapes is not None:
             return # already found shapes for this
@@ -179,7 +179,7 @@ class Timetable(object):
         actor = get_actor(self)
         start_lon_lat = {"lat": self.stations[connection.departure_stop]["stop_lat"], "lon": self.stations[connection.departure_stop]["stop_lon"]}
         end_lon_lat = {"lat": self.stations[connection.arrival_stop]["stop_lat"], "lon": self.stations[connection.arrival_stop]["stop_lon"]}
-        query = {"locations": [start_lon_lat, end_lon_lat], "costing": "pedestrian", "directions_options": {"units":"meters"}}
+        query = {"locations": [start_lon_lat, end_lon_lat], "costing": costing, "directions_options": {"units":"meters"}}
         
         route_res = actor.optimized_route(query)
         decoded_shapes_lon_lat = decode_polyline(route_res["trip"]["legs"][0]["shape"])
@@ -220,7 +220,7 @@ class Timetable(object):
             factor = 1
             batch_stations  = []
             batch_stations = self.searchable_stations.search_nearby_stations(station, nearby_station_radius / factor)
-            while len(batch_stations) > 20 and factor < 10: 
+            while len(batch_stations) > 20 and factor < 15: 
                 # If i got more than 20 this will be bad when i increase the amount i guess, so  
                 factor +=1
                 batch_stations = self.searchable_stations.search_nearby_stations(station, nearby_station_radius / factor)
@@ -287,7 +287,7 @@ class Timetable(object):
         # Receive a connection, and return a list of FOLLOWING connections that are in the same trip
         # The list will be sorted by departure time
         if connection.trip_id not in self.trip_connections:
-            if not is_footpath(connection.trip_id):
+            if not is_footpath(connection.trip_id) and not is_car_route(connection.trip_id):
                 # For now this should only be valid for footpaths
                 raise AssertionError("Trip id not found in trip connections")
             return [connection]
@@ -307,9 +307,13 @@ class Timetable(object):
         trip_id = connections[0].trip_id
         if is_footpath(trip_id):
             for c in connections:
-                self._get_walking_connection_shape(c)
+                self._get_route_connection_shape(c)
             return
-        
+        if is_car_route(trip_id):
+            for c in connections:
+                self._get_route_connection_shape(c, costing="auto")
+            return
+            
         stop_times = self.gtfs_instance.match_stops_to_shapes_for_trip(trip_id)
         # match stop_time to connection by station
         connections_by_station = {}
@@ -418,10 +422,11 @@ def display_station_footpaths(tt, station, station_footpaths):
 
 
 def main():
-    test_stations_footpaths()
+    # test_stations_footpaths()
+    # get_tlv_timetable(reparse=True, full_reparse=True)
     # test_searchable_stations()
     # test_tlv_timetable()
-
+    pass
 
 if __name__ == '__main__':
     main()

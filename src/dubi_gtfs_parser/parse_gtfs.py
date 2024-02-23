@@ -152,11 +152,14 @@ class GTFS:
         routes = parser.parse(id_tag="route_id")
 
         # add walking route
-        # add walking trip
-        walking_route = {'route_id': 'footpath', 'agency_id': '0', 'route_short_name': 'Walking', 'route_long_name': 'Walking',
+        walking_route = {'route_id': FOOTPATH_ID, 'agency_id': '0', 'route_short_name': 'Walking', 'route_long_name': 'Walking',
       'route_desc': '0#', 'route_type': '99', 'route_color': 'gray'}
         routes[FOOTPATH_ID] = walking_route
-   
+     
+        # add car drive route
+        car_route = {'route_id': CAR_ROUTE_ID, 'agency_id': '0', 'route_short_name': 'Car Drive', 'route_long_name': 'Car Drive',
+      'route_desc': '0#', 'route_type': '98', 'route_color': 'purple'}
+        routes[CAR_ROUTE_ID] = walking_route
         return routes
 
     def _parse_calendar(self):
@@ -232,9 +235,13 @@ class GTFS:
             print_log(f"got {len(bad_trips)} bad trips out of {len(trips)} trips")
         
         # add walking trip
-        walking_trip = {'route_id': 'footpath', 'service_id': '0', 'trip_id': 'footpath', 'trip_headsign': 'Walking', 'direction_id': '0', 'shape_id': ''}
+        walking_trip = {'route_id': FOOTPATH_ID, 'service_id': '0', 'trip_id': FOOTPATH_ID, 'trip_headsign': 'Walking', 'direction_id': '0', 'shape_id': ''}
         trips[FOOTPATH_ID] = walking_trip
-   
+
+        # Add car trip 
+        car_trip = {'route_id': CAR_ROUTE_ID, 'service_id': '0', 'trip_id': CAR_ROUTE_ID, 'trip_headsign': 'Car Drive', 'direction_id': '0', 'shape_id': ''}
+        trips[CAR_ROUTE_ID] = car_trip
+
         return trips
 
     def _search_circle_in_stops_or_shapes(self, stops, shapes):
@@ -623,7 +630,7 @@ def reduce_gtfs(gtfs, min_lon, max_lon, min_lat, max_lat):
     new_trips = {}
     new_stop_times = {}
     for trip in gtfs.trips.keys():
-        if is_footpath(trip):
+        if is_footpath(trip) or is_car_route(trip):
             new_trips[trip] = gtfs.trips[trip]
             # new_stop_times[trip] = []
             continue

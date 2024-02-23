@@ -20,7 +20,7 @@ class ValhallaActor():
         
 
         # config["service_limits"]["pedestrian"]["max_matrix_location_pairs"] = len(tt.stations)*2 + 100 # pad another 100 just to be sure
-        config["service_limits"]["pedestrian"]["max_matrix_location_pairs"] = len(tt.stations)*2 + 100  # pad another 100 just to be sure
+        config["service_limits"]["pedestrian"]["max_matrix_location_pairs"] = len(tt.stations)*3 + 100  # pad another 100 just to be sure
         config["service_limits"]["auto"]["max_matrix_location_pairs"] = len(tt.stations)*2 + 100  # pad another 100 just to be sure
         self.actor = valhalla.Actor(config)
 

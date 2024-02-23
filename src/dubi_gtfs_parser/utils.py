@@ -7,9 +7,13 @@ import time
 from typing import Callable, ClassVar, Dict, Optional
 
 FOOTPATH_ID = "footpath"
+CAR_ROUTE_ID = "car_route"
 
 def is_footpath(trip_id):
     return str(trip_id).startswith(FOOTPATH_ID) 
+
+def is_car_route(trip_id):
+    return str(trip_id).startswith(CAR_ROUTE_ID) 
 
 DEBUG_LOGS = True
 ARTIFACTS_FOLDER = "artifacts"
