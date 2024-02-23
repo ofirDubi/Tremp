@@ -41,6 +41,8 @@ def get_passable_stations(tt, start_loc, end_loc, deviation=60*5, debug=False):
     5. At the end we will remain with station that it is possible for the car to pass through.
     
     * deviation - allowed deviation from the fastest car route in seconds
+    * return - [(station, time_from_start, time_to_end), ....] - list of stations that are possible to pass through within time limit
+
     """ 
     (min_time, min_distance) = get_faster_car_route(tt, start_loc, end_loc)
     actor = get_actor(tt)
@@ -175,11 +177,13 @@ def build_connections_for_car_route(tt, start_loc, end_loc, start_time, deviatio
         trip_id = CAR_ROUTE_ID + "_" + str(i)
         tt.trips[trip_id] = tt.trips[CAR_ROUTE_ID]  
 
-        c = Connection(start_station, s[0], start_time, s[1], trip_id)
+        c = Connection(start_station["station_id"], s[0]["station_id"], start_time,  time_int_to_text(time_text_to_int(start_time)+ s[1]), trip_id)
         tt.station_connections[start_station["station_id"]].append(c)
-        c2 = Connection(s[0], end_station, s[1], s[2], trip_id)
-        tt.station_connections[end_station["station_id"]].append(c2)
 
+        c2 = Connection(s[0]["station_id"], end_station["station_id"], time_int_to_text(time_text_to_int(start_time)+ s[1]),
+                         time_int_to_text(time_text_to_int(start_time) + s[1] + s[2]), trip_id)
+        tt.station_connections[end_station["station_id"]].append(c2)
+    # display_connections(tt, tt.station_connections[start_station["station_id"]])
     return valid_stations
 
 ############################################################
