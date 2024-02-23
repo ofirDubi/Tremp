@@ -1,5 +1,5 @@
-from utils import BinarySearchIdx, time_text_to_int, get_some_items, time_int_to_text, FOOTPATH_ID, is_footpath, bus_line_from_trip_id
-from connection_builder import Connection, Timetable, get_tlv_timetable
+from utils import BinarySearchIdx, time_text_to_int, get_some_items, time_int_to_text, FOOTPATH_ID, is_footpath, bus_line_from_trip_id, is_car_route
+from connection_builder import Connection, Timetable, get_tlv_timetable, SearchableStations
 from display import display_connections, display_visited_stations, display_RaptorResult
 from car_routing import build_connections_for_car_route
 import time
@@ -46,21 +46,24 @@ class RaptorRouter(object):
         # All optimizations should be perforemd on the timetable object
         # This class should only be used to route and handle Valhalla API
         self.actor = get_actor(tt)
-        # TODO: maybe i should save it like this in tt, to save time here. 
-        self.stations_as_locations = [{"lat": s["stop_lat"], "lon": s["stop_lon"]} for s in tt.stations.values()]
-        self._walking_station_id = 0
-  
-    
-    def _get_walking_start_end_results(self, start_lon_lat, end_lon_lat, tt):
+        self.tt = tt
+
+    def _get_stations_as_locations(self):
+        # This was static, but as we dinamically add stations on the go we need to redo it. 
+        # TODO: cache this and only recalculate if stations where added or removed. 
+        return  [{"lat": s["stop_lat"], "lon": s["stop_lon"]} for s in self.tt.stations.values()]
+
+    def _get_walking_start_end_results(self, start_lon_lat, end_lon_lat, reparse=False):
         # load from file if exists
         file_path = os.path.join(utils.ARTIFACTS_FOLDER, f"walking_start_{'_'.join([str(i) for i in start_lon_lat.values()])}_end_{'_'.join([str(i) for i in end_lon_lat.values()])}_results.pkl")
-        if os.path.isfile(file_path):
+        if os.path.isfile(file_path) and not reparse:
             with Timer(text="[+] loading from file paths from src to all stations took {:.4f} seconds..."):
                 sorted_start_to_st, end_footpath_connections = utils.load_artifact(file_path)
         else:
-            targets = [end_lon_lat] + self.stations_as_locations
+            stations_as_locations = self._get_stations_as_locations()
+            targets = [end_lon_lat] + stations_as_locations
             query = {"sources" :[start_lon_lat], "targets": targets, "costing": "pedestrian"}
-            print(f"[+] parsing query - {len(self.stations_as_locations)}")
+            print(f"[+] parsing query - {len(stations_as_locations)}")
             with Timer(text="[+] searching paths from src to all stations took {:.4f} seconds..."):
                 source_footpath_connections = self.actor.matrix(query)
                 sorted_start_to_st = sorted(source_footpath_connections["sources_to_targets"][0], key=lambda x: x["time"])
@@ -68,7 +71,7 @@ class RaptorRouter(object):
             # Also the first index in source_footpath_connections["targets"] is the end location, so we already have walking time to it if we want :)
 
             # Get paths from all other stations to end station
-            query = {"sources" : self.stations_as_locations, "targets": [end_lon_lat], "costing": "pedestrian"}
+            query = {"sources" : stations_as_locations, "targets": [end_lon_lat], "costing": "pedestrian"}
             with Timer(text="[+] searching paths from all stations to dst took {:.4f} seconds..."):
                 end_footpath_connections = self.actor.matrix(query)
                 #sorted_st_to_end = sorted(source_footpath_connections["sources_to_targets"][0], key=lambda x: x["time"])     
@@ -77,7 +80,7 @@ class RaptorRouter(object):
         return sorted_start_to_st, end_footpath_connections
 
 
-    def semi_ultra_route(self, start_location, end_location, start_time, tt : Timetable, relax_footpaths=True,debug=False, limit_walking_time=60*60):        
+    def semi_ultra_route(self, start_location, end_location, start_time, tt : Timetable, car_route=False, relax_footpaths=True,debug=False, limit_walking_time=60*60):        
         """
         # route using the ULTRA algorithm, but only for the first and last leg of the trip
         # for now we skip optimization for the middle part of the trip, because it requires alot of preprocessing on the graph.
@@ -93,7 +96,9 @@ class RaptorRouter(object):
         start_station = tt._create_walking_station(start_lon_lat, name="Start")
         end_station = tt._create_walking_station(end_lon_lat, name="End")
         
-        sorted_start_to_st, end_footpath_connections = self._get_walking_start_end_results(start_lon_lat, end_lon_lat, tt)
+        # If there is a car route then i need to rebuild footpaths to account the stations created by the car route.
+        # TODO: This can be done better - i can use the previous data for static station and only add new ones.
+        sorted_start_to_st, end_footpath_connections = self._get_walking_start_end_results(start_lon_lat, end_lon_lat, reparse=car_route)
        
         # Now we have all the stations sorted by time to get there by foot from end station, so insert it to the graph!
         # TODO: optimization - it might be faster to search for stations 1 km from me, and only if the algorithm is not satisfied at the end i will search more.
@@ -306,6 +311,10 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
             # Essentially for each new station
             tmp_new_stations = {}
             for station in next_round_new_stations.keys():
+                if station not in tt.stations_footpaths:
+                    # if not is_car_route(station):
+                    #     raise AssertionError(f"Station {station} has no footpaths, and is not a car route")
+                    continue
                 for arrival_stop in tt.stations_footpaths[station]:
                     new_time = next_round_new_stations[station] + arrival_stop["time"]
                     if  arrival_stop["time"] > limit_mid_walking_time or \
@@ -353,10 +362,10 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
 # target_stop = 29462? 14003?
 # base_stop = 44420
 # base_stop = 44420
-def run_ultra_wrapper(start_loc, end_loc, start_time, tt, relax_footpaths=True, limit_walking_time=60*60, debug=False):
+def run_ultra_wrapper(start_loc, end_loc, start_time, tt, car_route=False, relax_footpaths=True, limit_walking_time=60*60, debug=False):
     final_results = []
     rr = RaptorRouter(tt)  
-    result_routes = rr.semi_ultra_route(start_loc, end_loc, start_time, tt, relax_footpaths=relax_footpaths, limit_walking_time=limit_walking_time, debug=debug)
+    result_routes = rr.semi_ultra_route(start_loc, end_loc, start_time, tt, car_route=car_route, relax_footpaths=relax_footpaths, limit_walking_time=limit_walking_time, debug=debug)
     if result_routes is None:
         return None
     
@@ -416,7 +425,7 @@ def test_ultra_route_with_car():
 
     with Timer(text="[+] running semi ULTRA took {:.4f} seconds..."):
         result_routes = run_ultra_wrapper({"stop_lat": 32.145549, "stop_lon": 34.819354}, {"stop_lat": 32.111850, "stop_lon": 34.831520}, "10:00:00", 
-                                            tt, relax_footpaths=True, limit_walking_time=60*15, debug=False)
+                                            tt, car_route=True, relax_footpaths=True, limit_walking_time=60*15, debug=True)
 
     
     for r in result_routes:
@@ -426,7 +435,8 @@ def test_ultra_route_with_car():
 
 def main():
     # test_raptor_route_simple()
-    test_ultra_route()
+    # test_ultra_route()
+    test_ultra_route_with_car()
 
 if __name__ == "__main__":
     main()

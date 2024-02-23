@@ -129,8 +129,8 @@ class SearchableStations(object):
 # - trip id (trip is a sequence of connections)
 class Connection(object):
     def __init__(self, departure_stop, arrival_stop, departure_time, arrival_time, trip_id):
-        self.departure_stop = departure_stop # actual stop obj
-        self.arrival_stop = arrival_stop # actual stop obj
+        self.departure_stop = departure_stop #  stop id
+        self.arrival_stop = arrival_stop # stop id
         if type(departure_time) != str or type(arrival_time) != str:
             raise AssertionError("departure_time and arrival_time should be strings")
         self.departure_time = departure_time # in text format hh:mm:ss
@@ -165,9 +165,10 @@ class Timetable(object):
         
     def _create_walking_station(self, station_lon_lat, name="Walking"):
         self._walking_station_id += 1
-        new_station = {"station_id" : str(self._walking_station_id), "stop_lon": station_lon_lat["lon"], "stop_lat": station_lon_lat["lat"], "stop_name" : name} 
-        self.stations[str(self._walking_station_id)] = new_station
-        self.station_connections[str(self._walking_station_id)] = []
+        station_id = name + "_" + str(self._walking_station_id)
+        new_station = {"station_id" : station_id, "stop_lon": station_lon_lat["lon"], "stop_lat": station_lon_lat["lat"], "stop_name" : name} 
+        self.stations[station_id] = new_station
+        self.station_connections[station_id] = []
         return new_station
     
     def _get_route_connection_shape(self, connection : Connection, costing="pedestrian"):
