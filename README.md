@@ -79,7 +79,7 @@ If i want a quick POC, i can use the following -
 * There could be a situation where another route is 5 min slower, but is not in the 5 min Isochrone of this route.
 * In order to solve this i will do the following - 
 1. search the fastest car route from A to B. set it to X. say we have an agreed deviation time of 5.
-2. do a one-to-many search from A to every station, and many-to-one from very station to B.
+2. do a one-to-many search from A to every station, and many-to-one from every station to B.
     a. This query can be time-limited - the combined journy must be shorter than X+5, so at the least we can limit each of them by X+5.
 3. Prune all of the irrelevant stations - only keep station S if A->S->B takes less than X+5 time. 
 4. At the end we will remain with station that it is possible for the car to pass through.

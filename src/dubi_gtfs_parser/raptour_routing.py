@@ -1,6 +1,7 @@
 from utils import BinarySearchIdx, time_text_to_int, get_some_items, time_int_to_text, FOOTPATH_ID, is_footpath, bus_line_from_trip_id
 from connection_builder import Connection, Timetable, get_tlv_timetable
 from display import display_connections, display_visited_stations, display_RaptorResult
+from car_routing import build_connections_for_car_route
 import time
 import utils
 import os
@@ -396,6 +397,32 @@ def test_ultra_route():
         r.display_result()
     
     print("[+] finished ultra test!")
+
+def test_ultra_route_with_car():
+    tt = get_tlv_timetable()
+
+    print("[+] starting ultra test!")
+
+    # Glilot camp
+    start_car = {"lat": 32.145549, "lon": 34.819354}
+    # Some random address in ramash
+    end_car = {"lat": 32.14188, "lon": 34.84082}
+
+    with Timer(text="[+] Building connections for car route {:.4f} seconds..."):
+        # Note - this takes 2.5-3.5 seconds for me for a 15 min trip with 5 min deviation, not so good.
+        # Initial pruning with isochrones takes 0.7 seconds, then one-to-many takes 2 seconds.
+        # Maybe i can prune more stations after i have initial raptor results - it might be so that some stations won't be optimal and can be dropped.
+        valid_stations = build_connections_for_car_route(tt, start_car, end_car, "10:05:00", deviation=60*2)
+
+    with Timer(text="[+] running semi ULTRA took {:.4f} seconds..."):
+        result_routes = run_ultra_wrapper({"stop_lat": 32.145549, "stop_lon": 34.819354}, {"stop_lat": 32.111850, "stop_lon": 34.831520}, "10:00:00", 
+                                            tt, relax_footpaths=True, limit_walking_time=60*15, debug=False)
+
+    
+    for r in result_routes:
+        print(r)
+        r.display_result()
+    
 
 def main():
     # test_raptor_route_simple()

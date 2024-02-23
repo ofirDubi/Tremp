@@ -1,6 +1,6 @@
 import tilemapbase
 from matplotlib import pyplot as plt
-from utils import meters_to_degrees, FOOTPATH_ID, is_footpath, time_int_to_text
+from utils import meters_to_degrees, FOOTPATH_ID, is_footpath, is_car_route, time_int_to_text
 
 def get_stations_area(stations):
     min_lon = min(stations, key=lambda x: float(x["stop_lon"]))
@@ -13,6 +13,9 @@ def get_stations_area(stations):
 def get_color(i, trip_id=None):
     if is_footpath(trip_id):
         return 'gray'
+    if is_car_route(trip_id):
+        return 'purple'
+    
     colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
     return colors[i % len(colors)]
 
