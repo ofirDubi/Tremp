@@ -196,7 +196,9 @@ Ok, i've verified that the walk to start stations is performed currectly.
 * Note that i came across a problem wit wrap around of 24H clock... i dealt with it in a very ugly way, TODO actually deal with it.
 * Now i think i'm ready to add Car routing!
 
-
+## 23/02/2024
+* TODO: investigate why on second round i get super bad arrival time for 43258, why isn't it ignored... 
+Maybe i need to add a logic of an upper bound on twice the walking distance from target or something before getting a real route to it. 
 
 # to generate new tiles (shouldn't be done much)
 1. put ISR israel-and-palestine-latest.osm.pbf in custom_files

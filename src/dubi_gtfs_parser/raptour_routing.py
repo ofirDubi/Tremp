@@ -204,11 +204,19 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
     next_round_new_stations = {}
     total_result_routes = []
     MAX_ROUNDS = 4
-    current_target_arrival_time = time_text_to_int("23:59:59") + 1000 # initiate to impossible time
+    INITIAL_ARRIVAL_TIME = time_text_to_int("23:59:59") + 1000 # initiate to impossible time
+    current_target_arrival_time = INITIAL_ARRIVAL_TIME 
+
+
     for r in range(MAX_ROUNDS):
         # if end_station in visited_stations:
         #     current_target_arrival_time = visited_stations[end_station].arrival_time
-
+        # TODO: Make the threashold time before finding taregt_arrival time as walking distance from start to end + some factor. 
+        if current_target_arrival_time != INITIAL_ARRIVAL_TIME:
+            MAX_TIME_THRESHOLD = current_target_arrival_time + limit_walking_time
+        else:
+            MAX_TIME_THRESHOLD = stations_to_end[start_station] + start_time_int + limit_walking_time
+        
         for station, st_arrival_time in new_stations.items():
             # iterate connections starting from the start_time
             # TODO: think about what to do regarding day-night transitions...
@@ -222,7 +230,6 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
             # Note that i will get many like these at the second/third round usually. I've been thinking if there is a way to not get them at all,
             # But it would be difficult because i only calculate current_target_arrival_time at the end of each round. if i'll build it dynamically i might save some time.
             # Maybe a greedy approach for each round will improve this, but for now it's good enough. 
-            MAX_TIME_THRESHOLD = current_target_arrival_time + limit_walking_time
             if st_arrival_time > MAX_TIME_THRESHOLD or \
                 st_arrival_time < start_time_int: # check wrap around of 24h clock  TODO: wraparound problem
                 continue
@@ -318,10 +325,11 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
                 for arrival_stop in tt.stations_footpaths[station]:
                     new_time = next_round_new_stations[station] + arrival_stop["time"]
                     if  arrival_stop["time"] > limit_mid_walking_time or \
-                        new_time > current_target_arrival_time:
+                        new_time > current_target_arrival_time or \
+                        new_time > MAX_TIME_THRESHOLD:
                         # footpaths are sorted by time, so if this is too much no point looking at more.
                         break
-
+                            
                     if arrival_stop["station_id"] not in visited_stations or \
                         new_time < visited_stations[arrival_stop["station_id"]].arrival_time:
                         # It is possible to improve the arrival time with walking.
