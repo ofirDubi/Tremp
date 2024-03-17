@@ -55,7 +55,6 @@ class SearchableStations(object):
         """
         results = []
         # Search for stations that are nearby the given station
-        target_location = (station["stop_lon"], station["stop_lat"])
         target_location_meters = (degrees_to_meters(station["stop_lon"]),  degrees_to_meters(station["stop_lat"]))
         # Search for stations in the same bucket
         target_x = float(station["stop_lon"])
@@ -204,37 +203,60 @@ class Timetable(object):
         '''
 
         # Note that also here i want to save time sending batches to valhalla, so for each station i will take all of the station in 1 km radius, then find many to many on a  2 KM radius.
-        
+        DEFAULT_MAX_FACTOR = 15
+        DEFAULT_MAX_STATION_MATRIX_SIZE = 1200
+        # current_max_factor = DEFAULT_MAX_FACTOR
         # This is the result. station -> [(station, path)]
         station_to_station_footpaths = {}
-
+        # remaining_stations = self.stations.copy()
         # le'ts just go station by station
-        for station in self.stations.values():
+        it = iter(self.stations.values())
+        station, at_end = next(it,""), object()
+        while station is not at_end:
             if station['station_id'] in station_to_station_footpaths:
                 # We already did this station with some other batch
+                station = next(it, at_end)
                 continue
-            # initiate to empty list
-            station_to_station_footpaths[station["station_id"]] = []
+            # initiate to empty list 
+            # station_to_station_footpaths[station["station_id"]] = []
 
             # Find nearby stations
             # originally it was 1 and 2, but my PC couldn't carry it so i lower it so /2 and 1.5
             factor = 1
             batch_stations  = []
             batch_stations = self.searchable_stations.search_nearby_stations(station, nearby_station_radius / factor)
-            while len(batch_stations) > 20 and factor < 15: 
-                # If i got more than 20 this will be bad when i increase the amount i guess, so  
-                factor +=1
-                batch_stations = self.searchable_stations.search_nearby_stations(station, nearby_station_radius / factor)
-
             nearby_stations = self.searchable_stations.search_nearby_stations(station, nearby_station_radius + nearby_station_radius / factor)
+            
+            while len(batch_stations) * len(nearby_stations) > DEFAULT_MAX_STATION_MATRIX_SIZE and factor < DEFAULT_MAX_FACTOR: 
+                # The larger the factor the less stations i will get in a batch, so the entire search will be slower but will require less memory.
+                # Using max factor of 
+                factor +=1
+                nearby_stations = self.searchable_stations.search_nearby_stations(station, nearby_station_radius + nearby_station_radius / factor)
+                batch_stations = self.searchable_stations.search_nearby_stations(station, nearby_station_radius / factor)
+            
+
             batch_stations_as_locations = [{"lat": s["stop_lat"], "lon": s["stop_lon"]} for s in batch_stations]
             nearby_stations_as_locations = [{"lat": s["stop_lat"], "lon": s["stop_lon"]} for s in nearby_stations]
             
             actor = get_actor(self)
             query = {"sources" :batch_stations_as_locations, "targets": nearby_stations_as_locations, "costing": "pedestrian"}
-            # print(f"[+] parsing query - {len(batch_stations_as_locations), len(nearby_stations_as_locations)}")
+            print(f"[+] parsing query - {len(batch_stations_as_locations), len(nearby_stations_as_locations)}")
             source_footpath_connections = []
+            # try: I tried to do incremental factoring here but it crashed python, apparently catching memory error is not viable.
             source_footpath_connections = actor.matrix(query)
+            # except MemoryError as e:
+            #     print(f"Memory error - {e} with factor of {current_max_factor}, increasing factor")
+            #     current_max_factor = current_max_factor * 2
+            #     continue
+                # raise e
+            # except Exception as e:
+            #     # print(f"Error - {e} with factor of {current_max_factor}, increasing factor")
+            #     # print(f"Error - {dir(e)}")
+            #     raise e
+            # # finally:
+            # #     print(f"Finished with factor of {current_max_factor}")
+
+                # Continue without increasing the iterator
             for i, st in enumerate(batch_stations):
                 footpaths = []
                 for f in source_footpath_connections['sources_to_targets'][i]:
@@ -248,8 +270,10 @@ class Timetable(object):
                 #display_station_footpaths(self, st, footpaths)
                 #display_stations(self, sts)
 
-            # For tests break now
-            # call valhalla many to many
+            # Advance the iterator to the next station
+            station = next(it, at_end)
+            # Reset factor to default value
+            current_max_factor = DEFAULT_MAX_FACTOR
         print("finished finding footpaths between stations!")
         return station_to_station_footpaths
 

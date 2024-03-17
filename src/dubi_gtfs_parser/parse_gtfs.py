@@ -159,7 +159,7 @@ class GTFS:
         # add car drive route
         car_route = {'route_id': CAR_ROUTE_ID, 'agency_id': '0', 'route_short_name': 'Car Drive', 'route_long_name': 'Car Drive',
       'route_desc': '0#', 'route_type': '98', 'route_color': 'purple'}
-        routes[CAR_ROUTE_ID] = walking_route
+        routes[CAR_ROUTE_ID] = car_route
         return routes
 
     def _parse_calendar(self):
