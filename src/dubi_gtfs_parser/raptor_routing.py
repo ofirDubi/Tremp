@@ -415,8 +415,8 @@ def test_ultra_route():
     
     print("[+] finished ultra test!")
 
-def test_ultra_route_with_car():
-    tt = get_tlv_timetable()
+def test_ultra_route_with_car(reparse=False, full_reparse=False):
+    tt = get_tlv_timetable(reparse, full_reparse)
 
     print("[+] starting ultra test!")
 
@@ -433,7 +433,7 @@ def test_ultra_route_with_car():
 
     with Timer(text="[+] running semi ULTRA took {:.4f} seconds..."):
         result_routes = run_ultra_wrapper({"stop_lat": 32.145549, "stop_lon": 34.819354}, {"stop_lat": 32.111850, "stop_lon": 34.831520}, "10:00:00", 
-                                            tt, car_route=True, relax_footpaths=True, limit_walking_time=60*15, debug=True)
+                                            tt, car_route=True, relax_footpaths=True, limit_walking_time=60*15, debug=False)
 
     
     for r in result_routes:
@@ -444,7 +444,8 @@ def test_ultra_route_with_car():
 def main():
     # test_raptor_route_simple()
     # test_ultra_route()
-    test_ultra_route_with_car()
+    test_ultra_route_with_car(reparse=False, full_reparse=False)
+    # test_ultra_route_with_car()
 
 if __name__ == "__main__":
     main()

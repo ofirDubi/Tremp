@@ -199,7 +199,18 @@ Ok, i've verified that the walk to start stations is performed currectly.
 ## 23/02/2024
 * TODO: investigate why on second round i get super bad arrival time for 43258, why isn't it ignored... 
 Maybe i need to add a logic of an upper bound on twice the walking distance from target or something before getting a real route to it. 
+Done. 
 
+## 24/02/2024
+* I'm done with everything and it pretty much works as expected! I can combine car drives with bus routes and it works :)
+* What's left to do now? I think i'd like to suggest better departure times for a certain trip. E.g if someone wants to leave at 10:00 i can tell him it is more optimal to leave at 10:15. 
+* After that's done i should probably generate some user interface to be used as a POC. 
+* I should also make a list of corners i've cut and of improvments that needs to be done before this goes into production.
+* Maybe a list of optimization ideas will also be a good idea (e.g. calculate car stations and routeing while the user inserts it's start and destination)
+* After that it's gonna be quite ready. 
+
+## 17/03/2024
+* 
 # to generate new tiles (shouldn't be done much)
 1. put ISR israel-and-palestine-latest.osm.pbf in custom_files
 2. docker run --rm -dt --name valhalla_gis-ops -p 8002:8002 -v %cd%/custom_files:/custom_files ghcr.io/gis-ops/docker-valhalla/valhalla:latest
@@ -207,3 +218,12 @@ https://github.com/gis-ops/docker-valhalla
 
 # links
 https://www.youtube.com/watch?v=AdArDN4E6Hg&t=1s&ab_channel=DFG-FOR2083
+raptor implementation - https://github.com/kit-algo/ULTRA
+
+# Cut corners - 
+* Right now i only work on TLV network, i assume working on a larger network will introduce new bugs 
+    * for example - now i calculate possible walk time for all stations, which is unneeded and will impact performance.
+* Getting the stations which are accessible within car route is not very optimal at the moment. The one-to-many query from the car to the stations takes a lot of time, i would need to implement this myself later if i want to get better run time. The main idea here is that when doing the one to many i can consider the fact that i can drop stations which are too far away a detour from the target destination.
+*   from raptour_routing.py - # If there is a car route then i need to rebuild footpaths to account the stations created by the car route.
+        # TODO: This can be done better - i can use the previous data for static station and only add new ones.
+* When doing a full reparse i receive a memory error at self.build_station_footpaths
