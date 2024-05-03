@@ -106,7 +106,7 @@ But i think i can build around that and then improve it to match all scenarios
 # So let's fix israels GTFS!! 
 * i run the validator, sees that there are missing collumes in the translation table - it seems like it jsut not build right... 
 
-# I wil say that GraphHopper was very easy to setup.
+I will say that GraphHopper was very easy to setup.
 ## Phase 2 - The App.
 
 
@@ -222,8 +222,11 @@ raptor implementation - https://github.com/kit-algo/ULTRA
 
 # Cut corners - 
 * Right now i only work on TLV network, i assume working on a larger network will introduce new bugs 
-    * for example - now i calculate possible walk time for all stations, which is unneeded and will impact performance.
+    * for example - now i calculate possible walk time for all stations, which is not necessery and will impact performance.
 * Getting the stations which are accessible within car route is not very optimal at the moment. The one-to-many query from the car to the stations takes a lot of time, i would need to implement this myself later if i want to get better run time. The main idea here is that when doing the one to many i can consider the fact that i can drop stations which are too far away a detour from the target destination.
 *   from raptour_routing.py - # If there is a car route then i need to rebuild footpaths to account the stations created by the car route.
         # TODO: This can be done better - i can use the previous data for static station and only add new ones.
 * When doing a full reparse i receive a memory error at self.build_station_footpaths
+* optimization of departure time - 
+        # I can think of more optimizaitons - for example i take bus from s1 to s2 and then wait 30 min for bus from s2 to s3.
+        # I can suggest to take the bus from s1 to s2 later, so i will wait less at s2. 

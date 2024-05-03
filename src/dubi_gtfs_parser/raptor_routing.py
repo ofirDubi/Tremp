@@ -40,7 +40,23 @@ class RaptorResult_v2():
     def __str__(self):
         return f"RaptorResult: departure_time={self.departure_time}, arrival_time={self.arrival_time}, trip_time={self.trip_time}, num_stops={self.num_stops}, num_transfers={self.num_transfers}, bus_lines={self.bus_lines}"
 
-
+def optimize_departure_time(result_routes):
+    # This function will optimize the departure time of each route, to suggest better departure time for the user.
+    # Naive approach will be to begin walking just before the first route starts.
+    for res in result_routes:
+        if is_footpath(res.result_connections[0].trip_id):
+            # we can start walking at time to reach the next connection instead of at departure time
+            time_to_save = time_text_to_int(res.result_connections[1].departure_time) - time_text_to_int(res.result_connections[0].arrival_time)
+            
+            new_walk_departure = time_text_to_int(res.result_connections[0].departure_time) + time_to_save
+            new_walk_arrival = time_text_to_int(res.result_connections[0].arrival_time) + time_to_save
+            res.result_connections[0].departure_time = time_int_to_text(new_walk_departure)
+            res.result_connections[0].arrival_time = time_int_to_text(new_walk_arrival)
+            res.departure_time = time_int_to_text(new_walk_departure)
+            res.trip_time = res.trip_time - (time_to_save/60.0)
+        # I can think of more optimizaitons - for example i take bus from s1 to s2 and then wait 30 min for bus from s2 to s3.
+        # I can suggest to take the bus from s1 to s2 later, so i will wait less at s2. 
+        # But for this it is maybe better to do RAPTOR-like algorithm which minimizes travel time
 class RaptorRouter(object):
     def __init__(self, tt):
         # All optimizations should be perforemd on the timetable object
@@ -268,7 +284,7 @@ def raptor_route(start_station, end_station, start_time, tt, end_footpath_connec
                         # TODO: implement walking to the end stations. i need to approach this with a fresher mind, but what i think
                         # is possible is instead of comparing arrival time, we will compare arrival time + walking time to the end station.
                         
-                        # 
+
                         # V2 - in visited stations, i will save entire connections for this trip, to avoid needing traversing the trip again.
                         # V2 - also calculate walking distance from the end station.
                         visited_stations[following_c.arrival_stop] = RVisidetStation(curr_arrival_time, trip_connections[:conn_idx+1], curr_arrival_time + stations_to_end[following_c.arrival_stop])
@@ -435,6 +451,7 @@ def test_ultra_route_with_car(reparse=False, full_reparse=False):
         result_routes = run_ultra_wrapper({"stop_lat": 32.145549, "stop_lon": 34.819354}, {"stop_lat": 32.111850, "stop_lon": 34.831520}, "10:00:00", 
                                             tt, car_route=True, relax_footpaths=True, limit_walking_time=60*15, debug=False)
 
+    optimize_departure_time(result_routes)
     
     for r in result_routes:
         print(r)
