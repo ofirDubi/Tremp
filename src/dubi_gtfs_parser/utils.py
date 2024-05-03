@@ -66,6 +66,7 @@ def distance_degrees_to_meters(p1, p2):
 
 
 def time_text_to_int(time_text):
+    # Returns time in seconds
     h, m, s = time_text.split(":")
     return (int(h) * 60 + int(m)) * 60 + int(s)
 
