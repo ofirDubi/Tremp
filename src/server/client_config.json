@@ -1,0 +1,1 @@
+{"host": "109.186.56.70", "port": 11881, "servercrt": "certs/server.crt", "clientkey": "certs/client1.key", "cliencrt": "certs/client1.crt"}
