@@ -1,13 +1,17 @@
 from bisect import bisect_left
 import time
 import pickle
-
+import os 
 from dataclasses import dataclass, field
 import time
 from typing import Callable, ClassVar, Dict, Optional
 
 FOOTPATH_ID = "footpath"
 CAR_ROUTE_ID = "car_route"
+MASTER_FOLDER = "C:\\Projects\\Tremp\\src"
+GTFS_PARSER_FOLDER = os.path.join(MASTER_FOLDER, "dubi_gtfs_parser")
+IS_GTFS_FOLDER = os.path.join(MASTER_FOLDER, "is_gtfs")
+ARTIFACTS_FOLDER = os.path.join(GTFS_PARSER_FOLDER, "artifacts")
 
 def is_footpath(trip_id):
     return str(trip_id).startswith(FOOTPATH_ID) 
@@ -16,8 +20,7 @@ def is_car_route(trip_id):
     return str(trip_id).startswith(CAR_ROUTE_ID) 
 
 DEBUG_LOGS = True
-ARTIFACTS_FOLDER = "artifacts"
-log_file = f"logs\\log_{int(time.time())}.txt"
+log_file = os.path.join(GTFS_PARSER_FOLDER, f"logs\\log_{int(time.time())}.txt")
 
 def print_log(*args, **kwargs):
     if DEBUG_LOGS:

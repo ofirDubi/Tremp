@@ -11,7 +11,6 @@ VALIDATE = True
 COMPLETE_PARSE = False
 PREPROCESS_SHAPE_STOP_MATCHES = False
 
-IS_GTFS_FOLDER = "../is_gtfs"
 IS_GTFS_OBJ = os.path.join(ARTIFACTS_FOLDER, "is_gtfs_obj.obj")
 TLV_GTFS_OBJ = os.path.join(ARTIFACTS_FOLDER, "tlv_gtfs_obj.obj")
 #               (min_lon, max_lon, min_lat, max_lat)
@@ -618,11 +617,17 @@ def get_is_tlv_gtfs(reparse=False, full_reparse=False):
         return gtfs
 
 
+def filter_station_by_area(stations, min_lon, max_lon, min_lat, max_lat):
+    return {k: v for k, v in stations.items() if float(v["stop_lon"]) >= min_lon and float(v["stop_lon"]) <= max_lon and \
+            float(v["stop_lat"]) >= min_lat and float(v["stop_lat"]) <= max_lat}
+
 def reduce_gtfs(gtfs, min_lon, max_lon, min_lat, max_lat):
     # Reduce gtfs to only include trips in a certain area.
     # I do this to create a smaller set of data for which to tryout my algorithms
     # I will do this by reducing the stations, and then remove trips which contains these stations
     new_stations = {}
+
+    # TODO: use filter_station_by_area
     for stop in gtfs.stations.items():
         if float(stop[1]["stop_lon"]) >= min_lon and float(stop[1]["stop_lon"]) <= max_lon and \
             float(stop[1]["stop_lat"]) >= min_lat and float(stop[1]["stop_lat"]) <= max_lat:
@@ -644,7 +649,7 @@ def reduce_gtfs(gtfs, min_lon, max_lon, min_lat, max_lat):
             new_trips[trip] = gtfs.trips[trip]
             new_stop_times[trip] = gtfs.stop_times[trip]
     
-    # change 3 segnificant parameters of gtfs
+    # change 3 significent parameters of gtfs
     gtfs.stations = new_stations
     gtfs.trips = new_trips
     gtfs.stop_times = new_stop_times
