@@ -1,7 +1,8 @@
 import valhalla
 import os
+from utils import MASTER_FOLDER
 
-VALHALLA_FOLDER = "../valhalla"
+VALHALLA_FOLDER = os.path.join(MASTER_FOLDER, "valhalla")
 
 class ValhallaActor():
 
@@ -14,7 +15,7 @@ class ValhallaActor():
         return cls.instance
     
     def init_actor(self, tt):
-        config = valhalla.get_config(tile_extract=os.path.join(VALHALLA_FOLDER,'./custom_files/valhalla_tiles.tar'), verbose=True)
+        config = valhalla.get_config(tile_extract=os.path.join(VALHALLA_FOLDER,'custom_files/valhalla_tiles.tar'), verbose=True)
         # TODO: figure out why changing this in json doesn't work
 
         

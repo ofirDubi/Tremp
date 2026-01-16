@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+
+# Data and artifacts (large files ~7GB total)
+src/dubi_gtfs_parser/artifacts/
+src/dubi_gtfs_parser/logs/
+src/is_gtfs/
+src/is_gtfs_outcls/
+src/valhalla/
+*.obj
+*.pkl
+
+# Backup files
+*copy*
+*bkp*
+
+# Archives
+src/google_transit.zip
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# Flutter build artifacts
+tremp_app/.dart_tool/
+tremp_app/.flutter-plugins
+tremp_app/.flutter-plugins-dependencies
+tremp_app/build/
+
+# Misc
+GraphHopper/
+open-bus/

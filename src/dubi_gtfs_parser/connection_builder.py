@@ -6,8 +6,8 @@ import math
 from codetiming import Timer
 from valhalla_interface import get_actor 
 
-IS_GTFS_FOLDER = "../is_gtfs"
 TLV_TIMETABLE_OBJ = os.path.join(ARTIFACTS_FOLDER, "tlv_timetable_obj.obj")
+IS_TIMETABLE_OBJ = os.path.join(ARTIFACTS_FOLDER, "is_timetable_obj.obj")
 
 
 
@@ -204,7 +204,7 @@ class Timetable(object):
 
         # Note that also here i want to save time sending batches to valhalla, so for each station i will take all of the station in 1 km radius, then find many to many on a  2 KM radius.
         DEFAULT_MAX_FACTOR = 15
-        DEFAULT_MAX_STATION_MATRIX_SIZE = 1200
+        DEFAULT_MAX_STATION_MATRIX_SIZE = 1000 # was 1200 when i only worked on tlv.
         # current_max_factor = DEFAULT_MAX_FACTOR
         # This is the result. station -> [(station, path)]
         station_to_station_footpaths = {}
@@ -375,6 +375,20 @@ def get_tlv_timetable(reparse=False, full_reparse=False):
             gtfs = get_is_tlv_gtfs()
         tt = Timetable(gtfs)
         save_artifact(tt, TLV_TIMETABLE_OBJ)
+        return tt
+
+def get_is_timetable(reparse=False, full_reparse=False):
+    if os.path.isfile(IS_TIMETABLE_OBJ) and not reparse:
+        print_log("loading tlv timetable from file...")
+        return load_artifact(IS_TIMETABLE_OBJ)
+    else:
+        print_log("parsing tlv timetable from gtfs...")
+        if(full_reparse):
+            gtfs = get_is_gtfs(full_reparse, full_reparse)
+        else:
+            gtfs = get_is_gtfs()
+        tt = Timetable(gtfs)
+        save_artifact(tt, IS_TIMETABLE_OBJ)
         return tt
 
 

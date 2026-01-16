@@ -11,7 +11,6 @@ VALIDATE = True
 COMPLETE_PARSE = False
 PREPROCESS_SHAPE_STOP_MATCHES = False
 
-IS_GTFS_FOLDER = "../is_gtfs"
 IS_GTFS_OBJ = os.path.join(ARTIFACTS_FOLDER, "is_gtfs_obj.obj")
 TLV_GTFS_OBJ = os.path.join(ARTIFACTS_FOLDER, "tlv_gtfs_obj.obj")
 #               (min_lon, max_lon, min_lat, max_lat)
