@@ -17,8 +17,16 @@ sys.path.insert(0, src_dir)
 sys.path.insert(0, os.path.join(src_dir, 'dubi_gtfs_parser'))
 from dubi_gtfs_parser.connection_builder import Connection, Timetable, get_is_timetable, get_tlv_timetable, SearchableStations
 from dubi_gtfs_parser.parse_gtfs import get_is_gtfs, reduce_gtfs
+from dubi_gtfs_parser.startup_checks import run_startup_checks, parse_args_for_bypass
 
 tt = None
+
+# Run startup checks before loading data
+bypass_checks = parse_args_for_bypass()
+if not run_startup_checks(bypass=bypass_checks):
+    print("[-] Server startup aborted due to failed checks.")
+    print("    Use --bypass-checks to start anyway (not recommended)")
+    sys.exit(1)
 
 class StorageEngine:
     def get_things(self, marker, limit):
@@ -225,7 +233,7 @@ class StationsResource:
             )
 
         rgtfs = reduce_gtfs(tt.gtfs_instance, float(min_lon), float(max_lon), float(min_lat), float(max_lat))
-        stations = rgtfs.stations()
+        stations = list(rgtfs.stations.values())
 
         resp.status = falcon.HTTP_200  # This is the default status
         #resp.content_type = falcon.MEDIA_TEXT  # Default is JSON, so override
