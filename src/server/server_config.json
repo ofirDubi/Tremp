@@ -1,0 +1,1 @@
+{"host": "0.0.0.0", "port": 11881, "serverpem": "certs/server.crt", "serverkey": "certs/server.key", "rootca": "certs/rootca.crt"}
