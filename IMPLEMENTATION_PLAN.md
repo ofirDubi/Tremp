@@ -8,26 +8,26 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 ## Phase 1: OpenAPI Specification
 **Goal:** Define the complete client-server API contract
 
-- [ ] 1.1 Create `openspec/api/tremp-api.yaml` with OpenAPI 3.0 header
-- [ ] 1.2 Define `Station` schema (id, name, location, lines, direction)
-- [ ] 1.3 Define `Line` schema (id, number, operator, direction, stops)
-- [ ] 1.4 Define `Arrival` schema (line, destination, arrival_time, is_realtime)
-- [ ] 1.5 Define `Route` schema (legs, total_time, transfers)
-- [ ] 1.6 Define `Place` schema (name, address, coordinates)
-- [ ] 1.7 Define `GET /stations` endpoint (bounding box query params)
-- [ ] 1.8 Define `GET /station/{id}` endpoint (station details with arrivals)
-- [ ] 1.9 Define `GET /lines` endpoint (optional search filter)
-- [ ] 1.10 Define `GET /line/{id}` endpoint (line details with stops)
-- [ ] 1.11 Define `GET /arrivals` endpoint (real-time arrivals for station)
-- [ ] 1.12 Define `POST /route` endpoint (route calculation)
-- [ ] 1.13 Define `GET /search` endpoint (place autocomplete)
-- [ ] 1.14 Add example requests/responses for each endpoint
-- [ ] 1.15 Validate OpenAPI spec with `openapi-generator validate`
+- [x] 1.1 Create `openspec/api/tremp-api.yaml` with OpenAPI 3.0 header
+- [x] 1.2 Define `Station` schema (id, name, location, lines, direction)
+- [x] 1.3 Define `Line` schema (id, number, operator, direction, stops)
+- [x] 1.4 Define `Arrival` schema (line, destination, arrival_time, is_realtime)
+- [x] 1.5 Define `Route` schema (legs, total_time, transfers)
+- [x] 1.6 Define `Place` schema (name, address, coordinates)
+- [x] 1.7 Define `GET /stations` endpoint (bounding box query params)
+- [x] 1.8 Define `GET /station/{id}` endpoint (station details with arrivals)
+- [x] 1.9 Define `GET /lines` endpoint (optional search filter)
+- [x] 1.10 Define `GET /line/{id}` endpoint (line details with stops)
+- [x] 1.11 Define `GET /arrivals` endpoint (real-time arrivals for station)
+- [x] 1.12 Define `POST /route` endpoint (route calculation)
+- [x] 1.13 Define `GET /search` endpoint (place autocomplete)
+- [x] 1.14 Add example requests/responses for each endpoint
+- [x] 1.15 Validate OpenAPI spec with `openapi-generator validate`
 
 **Acceptance Criteria:**
-- OpenAPI spec passes validation
-- All endpoints documented with request/response examples
-- Schemas match Flutter app data requirements
+- [x] OpenAPI spec passes validation
+- [x] All endpoints documented with request/response examples
+- [x] Schemas match Flutter app data requirements
 
 ---
 
@@ -249,6 +249,7 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 
 ## Status
 
-- **Current Phase:** 1 (OpenAPI Specification)
-- **Started:** [Date]
-- **Last Updated:** [Date]
+- **Current Phase:** 2 (Server Mocks)
+- **Started:** 2026-01-18
+- **Last Updated:** 2026-01-18
+- **Phase 1 Completed:** 2026-01-18

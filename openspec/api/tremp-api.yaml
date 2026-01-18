@@ -1,0 +1,1011 @@
+openapi: 3.0.3
+info:
+  title: Tremp API
+  description: |
+    Tremp is a multimodal transportation routing application that combines public transit
+    (buses, trains) with carpooling/ride-sharing for Israel.
+
+    ## Features
+    - Real-time and scheduled arrival information
+    - Transit route planning with RAPTOR algorithm
+    - Station and line discovery
+    - Hebrew, English, and Arabic localization support
+  version: 1.0.0
+  contact:
+    name: Tremp Development
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: http://localhost:8080
+    description: Mock server for testing
+
+tags:
+  - name: Stations
+    description: Transit station discovery and information
+  - name: Lines
+    description: Transit line browsing and search
+  - name: Arrivals
+    description: Real-time and scheduled arrival predictions
+  - name: Routing
+    description: Route planning and navigation
+  - name: Search
+    description: Place search and autocomplete
+
+paths:
+  /stations:
+    get:
+      tags:
+        - Stations
+      summary: Get stations within bounding box
+      description: |
+        Returns transit stations within the specified geographic bounding box.
+        Used for displaying station markers on the map.
+      operationId: getStations
+      parameters:
+        - name: min_lat
+          in: query
+          description: Minimum latitude of bounding box
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+          example: 32.05
+        - name: max_lat
+          in: query
+          description: Maximum latitude of bounding box
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+          example: 32.15
+        - name: min_lon
+          in: query
+          description: Minimum longitude of bounding box
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+          example: 34.75
+        - name: max_lon
+          in: query
+          description: Maximum longitude of bounding box
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+          example: 34.85
+        - name: limit
+          in: query
+          description: Maximum number of stations to return
+          required: false
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 500
+          example: 50
+      responses:
+        '200':
+          description: List of stations within bounding box
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Station'
+              example:
+                stations:
+                  - id: "25786"
+                    name: "Ben Gurion/Cemetery"
+                    name_he: "בן גוריון/בית העלמין"
+                    location:
+                      lat: 32.0853
+                      lon: 34.7818
+                    lines:
+                      - id: "273"
+                        number: "273"
+                        operator: "egged"
+                        color: "#4CAF50"
+                      - id: "89"
+                        number: "89"
+                        operator: "dan"
+                        color: "#2196F3"
+                    direction: "northeast"
+        '400':
+          description: Invalid bounding box parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /stations/nearby:
+    get:
+      tags:
+        - Stations
+      summary: Get stations near a location
+      description: |
+        Returns transit stations within a radius of the specified location.
+        Used for "Nearby Routes" feature.
+      operationId: getNearbyStations
+      parameters:
+        - name: lat
+          in: query
+          description: Latitude of center point
+          required: true
+          schema:
+            type: number
+            format: double
+          example: 32.0853
+        - name: lon
+          in: query
+          description: Longitude of center point
+          required: true
+          schema:
+            type: number
+            format: double
+          example: 34.7818
+        - name: radius
+          in: query
+          description: Search radius in meters
+          required: false
+          schema:
+            type: integer
+            default: 500
+            minimum: 100
+            maximum: 2000
+          example: 500
+      responses:
+        '200':
+          description: List of nearby stations with distance
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stations:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/Station'
+                        - type: object
+                          properties:
+                            distance_meters:
+                              type: integer
+                              description: Distance from query point in meters
+                              example: 120
+
+  /station/{id}:
+    get:
+      tags:
+        - Stations
+      summary: Get station details
+      description: |
+        Returns detailed information about a specific station,
+        including all serving lines and upcoming arrivals.
+      operationId: getStation
+      parameters:
+        - name: id
+          in: path
+          description: Station ID (stop_id from GTFS)
+          required: true
+          schema:
+            type: string
+          example: "25786"
+      responses:
+        '200':
+          description: Station details with arrivals
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Station'
+                  - type: object
+                    properties:
+                      address:
+                        type: string
+                        description: Full address of the station
+                        example: "Ben Gurion Blvd, Tel Aviv"
+                      arrivals:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Arrival'
+              example:
+                id: "25786"
+                name: "Ben Gurion/Cemetery"
+                name_he: "בן גוריון/בית העלמין"
+                location:
+                  lat: 32.0853
+                  lon: 34.7818
+                lines:
+                  - id: "273"
+                    number: "273"
+                    operator: "egged"
+                    color: "#4CAF50"
+                address: "Ben Gurion Blvd, Tel Aviv"
+                arrivals:
+                  - line:
+                      id: "273"
+                      number: "273"
+                      operator: "egged"
+                      color: "#4CAF50"
+                    destination: "Reading Terminal"
+                    destination_he: "טרמינל רידינג"
+                    arrival_time: "2026-01-18T14:25:00+02:00"
+                    minutes_until: 9
+                    is_realtime: true
+        '404':
+          description: Station not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /lines:
+    get:
+      tags:
+        - Lines
+      summary: Get transit lines
+      description: |
+        Returns a list of transit lines, optionally filtered by search query.
+        Search matches line number or destination name.
+      operationId: getLines
+      parameters:
+        - name: q
+          in: query
+          description: Search query (line number or destination)
+          required: false
+          schema:
+            type: string
+          example: "273"
+        - name: operator
+          in: query
+          description: Filter by operator ID
+          required: false
+          schema:
+            type: string
+            enum: [egged, dan, kavim, metropoline, superbus, israel_railways]
+          example: "egged"
+        - name: limit
+          in: query
+          description: Maximum number of lines to return
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 200
+          example: 20
+      responses:
+        '200':
+          description: List of transit lines
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  lines:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Line'
+              example:
+                lines:
+                  - id: "273"
+                    number: "273"
+                    operator: "egged"
+                    operator_name: "Egged"
+                    operator_name_he: "אגד"
+                    direction: "Toward Reading Terminal, Tel Aviv"
+                    direction_he: "לכיוון טרמינל רידינג, תל אביב"
+                    color: "#4CAF50"
+                    stops_count: 42
+
+  /line/{id}:
+    get:
+      tags:
+        - Lines
+      summary: Get line details
+      description: |
+        Returns detailed information about a specific transit line,
+        including all stops along the route.
+      operationId: getLine
+      parameters:
+        - name: id
+          in: path
+          description: Line ID (route_id from GTFS)
+          required: true
+          schema:
+            type: string
+          example: "273"
+        - name: direction
+          in: query
+          description: Direction of travel (0 or 1)
+          required: false
+          schema:
+            type: integer
+            enum: [0, 1]
+            default: 0
+      responses:
+        '200':
+          description: Line details with stops
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Line'
+                  - type: object
+                    properties:
+                      stops:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/LineStop'
+              example:
+                id: "273"
+                number: "273"
+                operator: "egged"
+                operator_name: "Egged"
+                operator_name_he: "אגד"
+                direction: "Toward Reading Terminal, Tel Aviv"
+                direction_he: "לכיוון טרמינל רידינג, תל אביב"
+                color: "#4CAF50"
+                stops_count: 42
+                stops:
+                  - station_id: "25786"
+                    name: "Ben Gurion/Cemetery"
+                    name_he: "בן גוריון/בית העלמין"
+                    sequence: 1
+                    location:
+                      lat: 32.0853
+                      lon: 34.7818
+                  - station_id: "25787"
+                    name: "Ben Gurion/Dizengoff"
+                    name_he: "בן גוריון/דיזנגוף"
+                    sequence: 2
+                    location:
+                      lat: 32.0858
+                      lon: 34.7812
+        '404':
+          description: Line not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /arrivals:
+    get:
+      tags:
+        - Arrivals
+      summary: Get real-time arrivals for a station
+      description: |
+        Returns upcoming arrivals for a specific station.
+        Includes both real-time predictions and scheduled times.
+      operationId: getArrivals
+      parameters:
+        - name: station_id
+          in: query
+          description: Station ID to get arrivals for
+          required: true
+          schema:
+            type: string
+          example: "25786"
+        - name: limit
+          in: query
+          description: Maximum number of arrivals to return
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 50
+          example: 10
+      responses:
+        '200':
+          description: List of upcoming arrivals
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  station_id:
+                    type: string
+                    example: "25786"
+                  station_name:
+                    type: string
+                    example: "Ben Gurion/Cemetery"
+                  arrivals:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Arrival'
+              example:
+                station_id: "25786"
+                station_name: "Ben Gurion/Cemetery"
+                arrivals:
+                  - line:
+                      id: "273"
+                      number: "273"
+                      operator: "egged"
+                      color: "#4CAF50"
+                    destination: "Reading Terminal"
+                    destination_he: "טרמינל רידינג"
+                    arrival_time: "2026-01-18T14:25:00+02:00"
+                    minutes_until: 9
+                    is_realtime: true
+                  - line:
+                      id: "89"
+                      number: "89"
+                      operator: "dan"
+                      color: "#2196F3"
+                    destination: "Central Station"
+                    destination_he: "התחנה המרכזית"
+                    arrival_time: "2026-01-18T14:34:00+02:00"
+                    minutes_until: 18
+                    is_realtime: false
+                    next_arrival_time: "2026-01-18T14:56:00+02:00"
+        '404':
+          description: Station not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /route:
+    post:
+      tags:
+        - Routing
+      summary: Calculate transit route
+      description: |
+        Calculates the best transit route between origin and destination.
+        Uses RAPTOR algorithm for optimal connections.
+        Supports departure time and arrival time constraints.
+      operationId: calculateRoute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteRequest'
+            example:
+              origin:
+                lat: 32.0853
+                lon: 34.7818
+              destination:
+                lat: 32.1093
+                lon: 34.8553
+              departure_time: "2026-01-18T14:00:00+02:00"
+              mode: "leave_now"
+      responses:
+        '200':
+          description: Route calculation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  routes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Route'
+              example:
+                routes:
+                  - id: "route_1"
+                    total_duration_minutes: 42
+                    departure_time: "2026-01-18T14:05:00+02:00"
+                    arrival_time: "2026-01-18T14:47:00+02:00"
+                    transfers: 1
+                    walking_duration_minutes: 8
+                    legs:
+                      - type: "walk"
+                        duration_minutes: 3
+                        distance_meters: 250
+                        from:
+                          name: "Origin"
+                          location:
+                            lat: 32.0853
+                            lon: 34.7818
+                        to:
+                          name: "Ben Gurion/Cemetery"
+                          name_he: "בן גוריון/בית העלמין"
+                          location:
+                            lat: 32.0858
+                            lon: 34.7815
+                      - type: "transit"
+                        duration_minutes: 25
+                        line:
+                          id: "273"
+                          number: "273"
+                          operator: "egged"
+                          color: "#4CAF50"
+                        departure_time: "2026-01-18T14:08:00+02:00"
+                        arrival_time: "2026-01-18T14:33:00+02:00"
+                        stops_count: 15
+                        from:
+                          name: "Ben Gurion/Cemetery"
+                          name_he: "בן גוריון/בית העלמין"
+                          location:
+                            lat: 32.0858
+                            lon: 34.7815
+                        to:
+                          name: "Arlozorov Terminal"
+                          name_he: "טרמינל ארלוזורוב"
+                          location:
+                            lat: 32.0956
+                            lon: 34.7875
+                      - type: "walk"
+                        duration_minutes: 5
+                        distance_meters: 400
+                        from:
+                          name: "Arlozorov Terminal"
+                          name_he: "טרמינל ארלוזורוב"
+                          location:
+                            lat: 32.0956
+                            lon: 34.7875
+                        to:
+                          name: "Destination"
+                          location:
+                            lat: 32.1093
+                            lon: 34.8553
+        '400':
+          description: Invalid route request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /search:
+    get:
+      tags:
+        - Search
+      summary: Search for places
+      description: |
+        Provides place autocomplete for route origin/destination input.
+        Returns matching places, stations, and addresses.
+      operationId: searchPlaces
+      parameters:
+        - name: q
+          in: query
+          description: Search query text
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          example: "Dizengoff"
+        - name: lat
+          in: query
+          description: Latitude for location bias
+          required: false
+          schema:
+            type: number
+            format: double
+          example: 32.0853
+        - name: lon
+          in: query
+          description: Longitude for location bias
+          required: false
+          schema:
+            type: number
+            format: double
+          example: 34.7818
+        - name: limit
+          in: query
+          description: Maximum number of results
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 20
+          example: 5
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Place'
+              example:
+                results:
+                  - id: "place_1"
+                    type: "station"
+                    name: "Dizengoff Center"
+                    name_he: "דיזנגוף סנטר"
+                    address: "Dizengoff St 50, Tel Aviv"
+                    location:
+                      lat: 32.0775
+                      lon: 34.7747
+                  - id: "place_2"
+                    type: "address"
+                    name: "Dizengoff Street"
+                    name_he: "רחוב דיזנגוף"
+                    address: "Dizengoff St, Tel Aviv"
+                    location:
+                      lat: 32.0780
+                      lon: 34.7740
+
+components:
+  schemas:
+    Location:
+      type: object
+      description: Geographic coordinates
+      required:
+        - lat
+        - lon
+      properties:
+        lat:
+          type: number
+          format: double
+          description: Latitude in decimal degrees
+          minimum: -90
+          maximum: 90
+          example: 32.0853
+        lon:
+          type: number
+          format: double
+          description: Longitude in decimal degrees
+          minimum: -180
+          maximum: 180
+          example: 34.7818
+
+    Station:
+      type: object
+      description: A transit station (bus stop, train station, etc.)
+      required:
+        - id
+        - name
+        - location
+      properties:
+        id:
+          type: string
+          description: Unique station identifier (GTFS stop_id)
+          example: "25786"
+        name:
+          type: string
+          description: Station name in English
+          example: "Ben Gurion/Cemetery"
+        name_he:
+          type: string
+          description: Station name in Hebrew
+          example: "בן גוריון/בית העלמין"
+        location:
+          $ref: '#/components/schemas/Location'
+        lines:
+          type: array
+          description: Lines serving this station
+          items:
+            $ref: '#/components/schemas/LineSummary'
+        direction:
+          type: string
+          description: Cardinal direction the station faces
+          enum: [north, south, east, west, northeast, northwest, southeast, southwest]
+          example: "northeast"
+
+    LineSummary:
+      type: object
+      description: Brief line information for badges/markers
+      required:
+        - id
+        - number
+        - operator
+      properties:
+        id:
+          type: string
+          description: Unique line identifier (GTFS route_id)
+          example: "273"
+        number:
+          type: string
+          description: Public-facing line number
+          example: "273"
+        operator:
+          type: string
+          description: Operator ID
+          enum: [egged, dan, kavim, metropoline, superbus, israel_railways]
+          example: "egged"
+        color:
+          type: string
+          description: Display color for the line (hex)
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          example: "#4CAF50"
+
+    Line:
+      type: object
+      description: Detailed transit line information
+      required:
+        - id
+        - number
+        - operator
+        - direction
+      properties:
+        id:
+          type: string
+          description: Unique line identifier (GTFS route_id)
+          example: "273"
+        number:
+          type: string
+          description: Public-facing line number
+          example: "273"
+        operator:
+          type: string
+          description: Operator ID
+          enum: [egged, dan, kavim, metropoline, superbus, israel_railways]
+          example: "egged"
+        operator_name:
+          type: string
+          description: Operator name in English
+          example: "Egged"
+        operator_name_he:
+          type: string
+          description: Operator name in Hebrew
+          example: "אגד"
+        direction:
+          type: string
+          description: Direction/destination description in English
+          example: "Toward Reading Terminal, Tel Aviv"
+        direction_he:
+          type: string
+          description: Direction/destination description in Hebrew
+          example: "לכיוון טרמינל רידינג, תל אביב"
+        color:
+          type: string
+          description: Display color for the line (hex)
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          example: "#4CAF50"
+        stops_count:
+          type: integer
+          description: Number of stops on this line
+          example: 42
+
+    LineStop:
+      type: object
+      description: A stop on a transit line
+      required:
+        - station_id
+        - name
+        - sequence
+        - location
+      properties:
+        station_id:
+          type: string
+          description: Station ID (GTFS stop_id)
+          example: "25786"
+        name:
+          type: string
+          description: Stop name in English
+          example: "Ben Gurion/Cemetery"
+        name_he:
+          type: string
+          description: Stop name in Hebrew
+          example: "בן גוריון/בית העלמין"
+        sequence:
+          type: integer
+          description: Order of this stop on the line (1-based)
+          minimum: 1
+          example: 1
+        location:
+          $ref: '#/components/schemas/Location'
+
+    Arrival:
+      type: object
+      description: An upcoming arrival at a station
+      required:
+        - line
+        - destination
+        - arrival_time
+        - is_realtime
+      properties:
+        line:
+          $ref: '#/components/schemas/LineSummary'
+        destination:
+          type: string
+          description: Final destination in English
+          example: "Reading Terminal"
+        destination_he:
+          type: string
+          description: Final destination in Hebrew
+          example: "טרמינל רידינג"
+        arrival_time:
+          type: string
+          format: date-time
+          description: Predicted or scheduled arrival time (ISO 8601)
+          example: "2026-01-18T14:25:00+02:00"
+        minutes_until:
+          type: integer
+          description: Minutes until arrival (for real-time display)
+          minimum: 0
+          example: 9
+        is_realtime:
+          type: boolean
+          description: Whether this is a real-time prediction (true) or scheduled (false)
+          example: true
+        next_arrival_time:
+          type: string
+          format: date-time
+          description: Next scheduled arrival after this one (for scheduled times)
+          example: "2026-01-18T14:56:00+02:00"
+
+    RouteRequest:
+      type: object
+      description: Request body for route calculation
+      required:
+        - origin
+        - destination
+      properties:
+        origin:
+          $ref: '#/components/schemas/Location'
+        destination:
+          $ref: '#/components/schemas/Location'
+        departure_time:
+          type: string
+          format: date-time
+          description: Desired departure time (for "depart at" mode)
+          example: "2026-01-18T14:00:00+02:00"
+        arrival_time:
+          type: string
+          format: date-time
+          description: Desired arrival time (for "arrive by" mode)
+          example: "2026-01-18T15:00:00+02:00"
+        mode:
+          type: string
+          description: Time mode for the route calculation
+          enum: [leave_now, depart_at, arrive_by]
+          default: leave_now
+          example: "leave_now"
+
+    Route:
+      type: object
+      description: A calculated transit route
+      required:
+        - id
+        - total_duration_minutes
+        - departure_time
+        - arrival_time
+        - transfers
+        - legs
+      properties:
+        id:
+          type: string
+          description: Unique route identifier
+          example: "route_1"
+        total_duration_minutes:
+          type: integer
+          description: Total trip duration in minutes
+          minimum: 0
+          example: 42
+        departure_time:
+          type: string
+          format: date-time
+          description: When to leave the origin
+          example: "2026-01-18T14:05:00+02:00"
+        arrival_time:
+          type: string
+          format: date-time
+          description: When to arrive at destination
+          example: "2026-01-18T14:47:00+02:00"
+        transfers:
+          type: integer
+          description: Number of transit transfers
+          minimum: 0
+          example: 1
+        walking_duration_minutes:
+          type: integer
+          description: Total walking time in minutes
+          minimum: 0
+          example: 8
+        legs:
+          type: array
+          description: Ordered list of route segments
+          items:
+            $ref: '#/components/schemas/RouteLeg'
+
+    RouteLeg:
+      type: object
+      description: A segment of a route (walk or transit)
+      required:
+        - type
+        - duration_minutes
+        - from
+        - to
+      properties:
+        type:
+          type: string
+          description: Type of leg
+          enum: [walk, transit, car]
+          example: "transit"
+        duration_minutes:
+          type: integer
+          description: Duration of this leg in minutes
+          minimum: 0
+          example: 25
+        distance_meters:
+          type: integer
+          description: Distance in meters (for walk legs)
+          minimum: 0
+          example: 250
+        line:
+          $ref: '#/components/schemas/LineSummary'
+        departure_time:
+          type: string
+          format: date-time
+          description: Departure time from this leg's origin
+          example: "2026-01-18T14:08:00+02:00"
+        arrival_time:
+          type: string
+          format: date-time
+          description: Arrival time at this leg's destination
+          example: "2026-01-18T14:33:00+02:00"
+        stops_count:
+          type: integer
+          description: Number of stops for transit legs
+          minimum: 0
+          example: 15
+        from:
+          $ref: '#/components/schemas/Place'
+        to:
+          $ref: '#/components/schemas/Place'
+
+    Place:
+      type: object
+      description: A location (station, address, or POI)
+      required:
+        - name
+        - location
+      properties:
+        id:
+          type: string
+          description: Unique place identifier
+          example: "place_1"
+        type:
+          type: string
+          description: Type of place
+          enum: [station, address, poi, current_location]
+          example: "station"
+        name:
+          type: string
+          description: Place name in English
+          example: "Dizengoff Center"
+        name_he:
+          type: string
+          description: Place name in Hebrew
+          example: "דיזנגוף סנטר"
+        address:
+          type: string
+          description: Full address
+          example: "Dizengoff St 50, Tel Aviv"
+        location:
+          $ref: '#/components/schemas/Location'
+
+    Error:
+      type: object
+      description: Error response
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: "NOT_FOUND"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Station not found"
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
