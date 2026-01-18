@@ -1,3 +1,22 @@
+<!-- OPENSPEC:START -->
+# OpenSpec Instructions
+
+These instructions are for AI assistants working in this project.
+
+Always open `@/openspec/AGENTS.md` when the request:
+- Mentions planning or proposals (words like proposal, spec, change, plan)
+- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
+- Sounds ambiguous and you need the authoritative spec before coding
+
+Use `@/openspec/AGENTS.md` to learn:
+- How to create and apply change proposals
+- Spec format and conventions
+- Project structure and guidelines
+
+Keep this managed block so 'openspec update' can refresh the instructions.
+
+<!-- OPENSPEC:END -->
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -83,9 +102,32 @@ The routing engine uses ULTRA-RAPTOR (Round-based Algorithm for Public Transit O
 - `FOOTPATH_ID = "footpath"` - Walking connections
 - `CAR_ROUTE_ID = "car_route"` - Car route connections
 
+## Mobile Testing with MCP
+
+The project uses mobile-mcp for Android emulator automation. Key tools:
+
+- `mobile_list_available_devices` - Find running emulators (device ID: `emulator-5554`)
+- `mobile_take_screenshot` - Capture screen state
+- `mobile_list_elements_on_screen` - Get UI element coordinates and labels
+- `mobile_click_on_screen_at_coordinates` - Tap specific coordinates
+- `mobile_swipe_on_screen` - Perform swipe gestures
+
+**Testing workflow:**
+1. Start emulator: `"%LOCALAPPDATA%\Android\sdk\emulator\emulator" -avd <AVD_NAME>`
+2. Start server: `python src/server/tremp_server_wsgi.py`
+3. Run app: `cd tremp_app && flutter run`
+4. Use MCP tools to interact with the app
+
+**Navigation tabs** (bottom bar, y≈2077):
+- Explore (x=108): Map view with search
+- Commute (x=324): Saved routes list
+- Saved (x=540): Saved locations
+- Contribute (x=756): User contributions
+- Updates (x=972): App updates
+
 ## Important Implementation Notes
 
-**Hardcoded paths in `utils.py`:** Windows paths are hardcoded (`D:\Projects\Tremp\src`). These need updating when working on different machines.
+**Hardcoded paths in `utils.py`:** Paths are now relative using `os.path.dirname(__file__)`. Previously hardcoded to `D:\Projects\Tremp\src`.
 
 **External dependencies not in repo:**
 - Israel GTFS data files in `src/is_gtfs/`

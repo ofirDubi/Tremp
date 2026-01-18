@@ -81,6 +81,60 @@ docker run --rm -dt --name valhalla_gis-ops -p 8002:8002 -v %cd%/custom_files:/c
 
 See: https://github.com/gis-ops/docker-valhalla
 
+## Testing
+
+### Android Emulator Testing with Mobile MCP
+
+The project supports automated UI testing on Android emulators using [mobile-mcp](https://github.com/anthropics/mobile-mcp).
+
+**Prerequisites:**
+- Android SDK with emulator and platform-tools
+- An Android Virtual Device (AVD) configured
+- mobile-mcp installed in Claude Code
+
+**Running Tests:**
+
+1. Start an Android emulator:
+```bash
+# List available AVDs
+emulator -list-avds
+
+# Start emulator (Windows)
+"%LOCALAPPDATA%\Android\sdk\emulator\emulator" -avd <AVD_NAME>
+
+# Start emulator (macOS/Linux)
+$ANDROID_HOME/emulator/emulator -avd <AVD_NAME>
+```
+
+2. Start the Python server:
+```bash
+python src/server/tremp_server_wsgi.py
+```
+
+3. Run the Flutter app on the emulator:
+```bash
+cd tremp_app
+flutter run
+```
+
+4. Use mobile-mcp tools in Claude Code to interact with the app:
+   - `mobile_list_available_devices` - List connected devices
+   - `mobile_take_screenshot` - Capture current screen
+   - `mobile_list_elements_on_screen` - Get UI element coordinates
+   - `mobile_click_on_screen_at_coordinates` - Tap on elements
+   - `mobile_swipe_on_screen` - Swipe gestures
+
+**Navigation Test Verification:**
+
+The app has 5 main navigation tabs:
+- **Explore** - Map view with search, Destination/Origin toggles
+- **Commute** - List view with saved commute routes
+- **Saved** - Saved locations list
+- **Contribute** - User contribution options
+- **Updates** - App updates and notifications
+
+All tabs should be accessible via the bottom navigation bar.
+
 ## Core Architecture
 
 ### RAPTOR Routing Algorithm
