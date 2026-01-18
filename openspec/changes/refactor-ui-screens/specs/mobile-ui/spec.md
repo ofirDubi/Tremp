@@ -260,3 +260,108 @@ The app SHALL allow access to saved favorites without network connection.
 - **WHEN** network connection restored
 - **THEN** favorites sync with fresh data
 - **AND** arrival times update automatically
+
+---
+
+### Requirement: OpenAPI Specification for Client-Server API
+The project SHALL maintain an OpenAPI 3.0 specification defining all client-server API contracts.
+
+#### Scenario: API spec exists and is valid
+- **WHEN** developer opens `openspec/api/tremp-api.yaml`
+- **THEN** valid OpenAPI 3.0 specification is present
+- **AND** all endpoints used by client are documented
+- **AND** request/response schemas are fully defined
+
+#### Scenario: Stations endpoint documented
+- **WHEN** reviewing `/stations` endpoint in spec
+- **THEN** GET method with bounding box query params is defined
+- **AND** response schema includes array of Station objects
+- **AND** Station schema includes: id, name, location, lines
+
+#### Scenario: Lines endpoint documented
+- **WHEN** reviewing `/lines` endpoint in spec
+- **THEN** GET method with optional search filter is defined
+- **AND** response schema includes array of Line objects
+- **AND** Line schema includes: id, number, operator, direction, stops
+
+#### Scenario: Arrivals endpoint documented
+- **WHEN** reviewing `/arrivals` endpoint in spec
+- **THEN** GET method with station_id param is defined
+- **AND** response schema includes array of Arrival objects
+- **AND** Arrival schema includes: line, destination, arrival_time, is_realtime
+
+#### Scenario: Route endpoint documented
+- **WHEN** reviewing `/route` endpoint in spec
+- **THEN** POST method with origin/destination body is defined
+- **AND** response schema includes Route with legs and timing
+- **AND** supports departure_time parameter
+
+---
+
+### Requirement: Mock Server for GUI Testing
+The project SHALL provide a mock server that implements the OpenAPI spec for testing.
+
+#### Scenario: Mock server starts successfully
+- **WHEN** test harness initializes mock server
+- **THEN** server starts on configurable port
+- **AND** all API endpoints return valid mock data
+- **AND** responses match OpenAPI schema
+
+#### Scenario: Mock data is realistic
+- **WHEN** client requests stations from mock server
+- **THEN** response contains realistic Israeli station data
+- **AND** station names are in Hebrew and English
+- **AND** line numbers match real transit operators
+
+#### Scenario: Mock server supports test scenarios
+- **WHEN** test configures mock for specific scenario
+- **THEN** mock can return empty results (no stations nearby)
+- **AND** mock can return error responses (server error, timeout)
+- **AND** mock can simulate slow responses (loading states)
+
+---
+
+### Requirement: Automated GUI Tests with Android MCP
+The project SHALL include automated UI tests using mobile-mcp for Android emulator testing.
+
+#### Scenario: Test verifies Map Home screen
+- **WHEN** automated test runs against mock server
+- **THEN** test launches app on Android emulator
+- **AND** verifies map displays with station markers
+- **AND** verifies bottom sheet shows nearby routes
+
+#### Scenario: Test verifies station selection flow
+- **WHEN** test taps on station marker
+- **THEN** bottom sheet expands
+- **AND** station name and arrivals are visible
+- **AND** arrival times match mock server data
+
+#### Scenario: Test verifies navigation tabs
+- **WHEN** test clicks each navigation tab
+- **THEN** correct screen is displayed for each tab
+- **AND** screen content matches expected layout
+- **AND** back navigation works correctly
+
+#### Scenario: Test verifies Lines browser
+- **WHEN** test opens Lines tab
+- **THEN** search field is visible
+- **AND** line cards display operator logos
+- **AND** tapping line shows line details
+
+#### Scenario: Test verifies Stations browser
+- **WHEN** test opens Stations tab
+- **THEN** station cards show line badges
+- **AND** search by station ID works
+- **AND** search by name works
+
+#### Scenario: Test verifies error handling
+- **WHEN** mock server returns error
+- **THEN** app displays user-friendly error message
+- **AND** retry option is available
+- **AND** app does not crash
+
+#### Scenario: Tests run in CI pipeline
+- **WHEN** code is pushed to repository
+- **THEN** CI pipeline starts Android emulator
+- **AND** runs all MCP GUI tests
+- **AND** reports pass/fail status

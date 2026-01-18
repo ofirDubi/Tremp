@@ -75,18 +75,48 @@
 - [ ] 8.6 Implement recents storage (last 10 stations, lines, directions)
 - [ ] 8.7 Add loading states and error handling UI
 
-## Phase 9: Backend Integration
-- [ ] 9.1 Extend `server_comms.dart` with new endpoints
-- [ ] 9.2 Implement `/lines` endpoint (if not exists)
-- [ ] 9.3 Implement `/arrivals` endpoint for real-time data
-- [ ] 9.4 Add error handling and retry logic
-- [ ] 9.5 Implement offline caching for frequently used data
+## Phase 9: OpenAPI Specification
+- [ ] 9.1 Create `openspec/api/tremp-api.yaml` OpenAPI 3.0 specification
+- [ ] 9.2 Define `/stations` endpoint (GET stations in bounding box)
+- [ ] 9.3 Define `/station/{id}` endpoint (GET station details with arrivals)
+- [ ] 9.4 Define `/lines` endpoint (GET all lines, with search filter)
+- [ ] 9.5 Define `/line/{id}` endpoint (GET line details with stops)
+- [ ] 9.6 Define `/arrivals` endpoint (GET real-time arrivals for station)
+- [ ] 9.7 Define `/route` endpoint (POST route calculation request)
+- [ ] 9.8 Define `/search` endpoint (GET place search autocomplete)
+- [ ] 9.9 Define common schemas: Station, Line, Arrival, Route, Place
+- [ ] 9.10 Add API documentation with examples
 
-## Phase 10: Polish & Testing
-- [ ] 10.1 Add loading skeletons/shimmer effects
-- [ ] 10.2 Implement pull-to-refresh where applicable
-- [ ] 10.3 Add empty state illustrations
-- [ ] 10.4 Test RTL layout in Hebrew
-- [ ] 10.5 Test on multiple screen sizes
-- [ ] 10.6 Mobile MCP automated UI tests for all screens
-- [ ] 10.7 Performance optimization (list virtualization, etc.)
+## Phase 10: Backend Integration
+- [ ] 10.1 Extend `server_comms.dart` to match OpenAPI spec
+- [ ] 10.2 Implement missing endpoints on Python server
+- [ ] 10.3 Add error handling and retry logic
+- [ ] 10.4 Implement offline caching for frequently used data
+- [ ] 10.5 Validate client/server match OpenAPI contract
+
+## Phase 11: Mock Server & GUI Testing
+- [ ] 11.1 Create mock server based on OpenAPI spec (`test/mock_server.dart`)
+- [ ] 11.2 Generate mock data fixtures for stations, lines, arrivals
+- [ ] 11.3 Implement mock server responses with realistic delays
+- [ ] 11.4 Create test harness that starts mock server for tests
+
+## Phase 12: Android MCP UI Tests
+- [ ] 12.1 Write test: Map Home loads and displays station markers
+- [ ] 12.2 Write test: Tap station marker → bottom sheet shows arrivals
+- [ ] 12.3 Write test: Search bar opens Route Search screen
+- [ ] 12.4 Write test: Lines tab displays line list from mock data
+- [ ] 12.5 Write test: Stations tab displays station cards with badges
+- [ ] 12.6 Write test: Profile tab shows settings menu
+- [ ] 12.7 Write test: Navigation between all 4 tabs works
+- [ ] 12.8 Write test: Hebrew RTL layout displays correctly
+- [ ] 12.9 Write test: Error states display appropriate messages
+- [ ] 12.10 Create CI pipeline for automated MCP tests
+
+## Phase 13: Polish & Final Testing
+- [ ] 13.1 Add loading skeletons/shimmer effects
+- [ ] 13.2 Implement pull-to-refresh where applicable
+- [ ] 13.3 Add empty state illustrations
+- [ ] 13.4 Test RTL layout in Hebrew
+- [ ] 13.5 Test on multiple screen sizes
+- [ ] 13.6 Performance optimization (list virtualization, etc.)
+- [ ] 13.7 Final integration test with real backend

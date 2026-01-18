@@ -60,6 +60,25 @@ The current Tremp app has placeholder screens and an outdated light theme. To be
 - Station markers: Yellow/gold badges
 - Operator-specific colors for line badges
 
+### API Contract & Testing Infrastructure
+
+6. **OpenAPI Specification**
+   - Create `openspec/api/tremp-api.yaml` with full API contract
+   - Define all endpoints: /stations, /lines, /arrivals, /route, /search
+   - Document request/response schemas with examples
+   - Single source of truth for client and server developers
+
+7. **Mock Server for Testing**
+   - Implement mock server based on OpenAPI spec
+   - Realistic Israeli transit data (Hebrew/English station names)
+   - Configurable responses for testing edge cases (errors, empty, slow)
+
+8. **Automated GUI Tests (Android MCP)**
+   - UI tests using mobile-mcp for emulator automation
+   - Test all screens against mock server data
+   - Verify navigation, data display, error handling
+   - CI pipeline integration for automated testing
+
 ## Impact
 
 - **Affected specs**: New `mobile-ui` capability
@@ -67,4 +86,7 @@ The current Tremp app has placeholder screens and an outdated light theme. To be
   - `tremp_app/lib/main.dart` - Complete rewrite
   - `tremp_app/lib/other_screens.dart` - Remove, replace with new screens
   - New files for each screen component
+  - `openspec/api/tremp-api.yaml` - New OpenAPI specification
+  - `tremp_app/test/mock_server.dart` - New mock server for testing
+  - `tremp_app/test/ui/` - New MCP-based UI tests
 - **Breaking changes**: Complete UI overhaul, navigation structure change
