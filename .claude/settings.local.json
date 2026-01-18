@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter run:*)",
+      "Bash(curl:*)",
+      "Bash(git commit:*)",
+      "Bash(git merge:*)"
+    ],
+    "defaultMode": "bypassPermissions"
+  }
+}
