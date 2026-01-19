@@ -34,27 +34,27 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 ## Phase 2: Server Mocks
 **Goal:** Create mock server that implements OpenAPI spec for testing
 
-- [ ] 2.1 Create `tremp_app/test/mocks/` directory structure
-- [ ] 2.2 Create `mock_data/stations.json` with 20+ realistic Israeli stations
-- [ ] 2.3 Create `mock_data/lines.json` with 30+ lines (Egged, Dan, etc.)
-- [ ] 2.4 Create `mock_data/arrivals.json` with arrival times per station
-- [ ] 2.5 Create `mock_server.dart` with HTTP server implementation
-- [ ] 2.6 Implement `/stations` endpoint handler
-- [ ] 2.7 Implement `/station/{id}` endpoint handler
-- [ ] 2.8 Implement `/lines` endpoint handler
-- [ ] 2.9 Implement `/line/{id}` endpoint handler
-- [ ] 2.10 Implement `/arrivals` endpoint handler
-- [ ] 2.11 Implement `/route` endpoint handler (static response)
-- [ ] 2.12 Implement `/search` endpoint handler
-- [ ] 2.13 Add configurable delay for simulating network latency
-- [ ] 2.14 Add error simulation mode (500, timeout, empty)
-- [ ] 2.15 Create test verifying mock server matches OpenAPI spec
+- [x] 2.1 Create `tremp_app/test/mocks/` directory structure
+- [x] 2.2 Create `mock_data/stations.json` with 20+ realistic Israeli stations
+- [x] 2.3 Create `mock_data/lines.json` with 30+ lines (Egged, Dan, etc.)
+- [x] 2.4 Create `mock_data/arrivals.json` with arrival times per station
+- [x] 2.5 Create `mock_server.dart` with HTTP server implementation
+- [x] 2.6 Implement `/stations` endpoint handler
+- [x] 2.7 Implement `/station/{id}` endpoint handler
+- [x] 2.8 Implement `/lines` endpoint handler
+- [x] 2.9 Implement `/line/{id}` endpoint handler
+- [x] 2.10 Implement `/arrivals` endpoint handler
+- [x] 2.11 Implement `/route` endpoint handler (static response)
+- [x] 2.12 Implement `/search` endpoint handler
+- [x] 2.13 Add configurable delay for simulating network latency
+- [x] 2.14 Add error simulation mode (500, timeout, empty)
+- [x] 2.15 Create test verifying mock server matches OpenAPI spec
 
 **Acceptance Criteria:**
-- Mock server starts and responds on all endpoints
-- Responses match OpenAPI schema exactly
-- Mock data includes Hebrew and English text
-- Error modes can be triggered for testing
+- [x] Mock server starts and responds on all endpoints
+- [x] Responses match OpenAPI schema exactly
+- [x] Mock data includes Hebrew and English text
+- [x] Error modes can be triggered for testing
 
 ---
 
@@ -249,7 +249,8 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 
 ## Status
 
-- **Current Phase:** 2 (Server Mocks)
+- **Current Phase:** 3 (Foundation & Theme)
 - **Started:** 2026-01-18
-- **Last Updated:** 2026-01-18
+- **Last Updated:** 2026-01-19
 - **Phase 1 Completed:** 2026-01-18
+- **Phase 2 Completed:** 2026-01-19

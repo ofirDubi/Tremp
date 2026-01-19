@@ -1,0 +1,263 @@
+{
+  "arrivals_by_station": {
+    "25786": {
+      "station_id": "25786",
+      "station_name": "Ben Gurion/Cemetery",
+      "station_name_he": "בן גוריון/בית העלמין",
+      "arrivals": [
+        {
+          "line": {"id": "273", "number": "273", "operator": "egged", "color": "#4CAF50"},
+          "destination": "Reading Terminal",
+          "destination_he": "טרמינל רידינג",
+          "minutes_until": 3,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "89", "number": "89", "operator": "dan", "color": "#2196F3"},
+          "destination": "Central Station",
+          "destination_he": "התחנה המרכזית",
+          "minutes_until": 8,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "273", "number": "273", "operator": "egged", "color": "#4CAF50"},
+          "destination": "Reading Terminal",
+          "destination_he": "טרמינל רידינג",
+          "minutes_until": 18,
+          "is_realtime": false
+        },
+        {
+          "line": {"id": "89", "number": "89", "operator": "dan", "color": "#2196F3"},
+          "destination": "Central Station",
+          "destination_he": "התחנה המרכזית",
+          "minutes_until": 23,
+          "is_realtime": false
+        }
+      ]
+    },
+    "21000": {
+      "station_id": "21000",
+      "station_name": "Dizengoff Center",
+      "station_name_he": "דיזנגוף סנטר",
+      "arrivals": [
+        {
+          "line": {"id": "5", "number": "5", "operator": "dan", "color": "#2196F3"},
+          "destination": "Ramat Aviv",
+          "destination_he": "רמת אביב",
+          "minutes_until": 2,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "18", "number": "18", "operator": "dan", "color": "#2196F3"},
+          "destination": "Jaffa",
+          "destination_he": "יפו",
+          "minutes_until": 5,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "61", "number": "61", "operator": "kavim", "color": "#FF9800"},
+          "destination": "Rabin Square",
+          "destination_he": "כיכר רבין",
+          "minutes_until": 10,
+          "is_realtime": false
+        }
+      ]
+    },
+    "21001": {
+      "station_id": "21001",
+      "station_name": "Arlozorov Terminal",
+      "station_name_he": "טרמינל ארלוזורוב",
+      "arrivals": [
+        {
+          "line": {"id": "480", "number": "480", "operator": "egged", "color": "#4CAF50"},
+          "destination": "Haifa",
+          "destination_he": "חיפה",
+          "minutes_until": 5,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "89", "number": "89", "operator": "dan", "color": "#2196F3"},
+          "destination": "Central Station",
+          "destination_he": "התחנה המרכזית",
+          "minutes_until": 7,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "405", "number": "405", "operator": "egged", "color": "#4CAF50"},
+          "destination": "Jerusalem",
+          "destination_he": "ירושלים",
+          "minutes_until": 12,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "273", "number": "273", "operator": "egged", "color": "#4CAF50"},
+          "destination": "Reading Terminal",
+          "destination_he": "טרמינל רידינג",
+          "minutes_until": 15,
+          "is_realtime": false
+        }
+      ]
+    },
+    "21002": {
+      "station_id": "21002",
+      "station_name": "Reading Terminal",
+      "station_name_he": "טרמינל רידינג",
+      "arrivals": [
+        {
+          "line": {"id": "273", "number": "273", "operator": "egged", "color": "#4CAF50"},
+          "destination": "Ben Gurion",
+          "destination_he": "בן גוריון",
+          "minutes_until": 4,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "47", "number": "47", "operator": "dan", "color": "#2196F3"},
+          "destination": "Ramat Aviv Mall",
+          "destination_he": "קניון רמת אביב",
+          "minutes_until": 9,
+          "is_realtime": true
+        }
+      ]
+    },
+    "21003": {
+      "station_id": "21003",
+      "station_name": "Central Station/South",
+      "station_name_he": "התחנה המרכזית/דרום",
+      "arrivals": [
+        {
+          "line": {"id": "480", "number": "480", "operator": "egged", "color": "#4CAF50"},
+          "destination": "Haifa",
+          "destination_he": "חיפה",
+          "minutes_until": 2,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "405", "number": "405", "operator": "egged", "color": "#4CAF50"},
+          "destination": "Jerusalem",
+          "destination_he": "ירושלים",
+          "minutes_until": 6,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "89", "number": "89", "operator": "dan", "color": "#2196F3"},
+          "destination": "Arlozorov",
+          "destination_he": "ארלוזורוב",
+          "minutes_until": 11,
+          "is_realtime": false
+        },
+        {
+          "line": {"id": "141", "number": "141", "operator": "kavim", "color": "#FF9800"},
+          "destination": "Holon",
+          "destination_he": "חולון",
+          "minutes_until": 15,
+          "is_realtime": false
+        }
+      ]
+    },
+    "21008": {
+      "station_id": "21008",
+      "station_name": "Azrieli Center",
+      "station_name_he": "מרכז עזריאלי",
+      "arrivals": [
+        {
+          "line": {"id": "train_1", "number": "Train", "operator": "israel_railways", "color": "#9C27B0"},
+          "destination": "Haifa",
+          "destination_he": "חיפה",
+          "minutes_until": 8,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "480", "number": "480", "operator": "egged", "color": "#4CAF50"},
+          "destination": "Haifa",
+          "destination_he": "חיפה",
+          "minutes_until": 12,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "405", "number": "405", "operator": "egged", "color": "#4CAF50"},
+          "destination": "Jerusalem",
+          "destination_he": "ירושלים",
+          "minutes_until": 14,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "47", "number": "47", "operator": "dan", "color": "#2196F3"},
+          "destination": "Ramat Aviv Mall",
+          "destination_he": "קניון רמת אביב",
+          "minutes_until": 18,
+          "is_realtime": false
+        }
+      ]
+    },
+    "21010": {
+      "station_id": "21010",
+      "station_name": "Tel Aviv University",
+      "station_name_he": "אוניברסיטת תל אביב",
+      "arrivals": [
+        {
+          "line": {"id": "289", "number": "289", "operator": "egged", "color": "#4CAF50"},
+          "destination": "Habima",
+          "destination_he": "הבימה",
+          "minutes_until": 6,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "572", "number": "572", "operator": "metropoline", "color": "#E91E63"},
+          "destination": "Ramat Aviv Mall",
+          "destination_he": "קניון רמת אביב",
+          "minutes_until": 11,
+          "is_realtime": false
+        }
+      ]
+    },
+    "21012": {
+      "station_id": "21012",
+      "station_name": "Jaffa Clock Tower",
+      "station_name_he": "מגדל השעון יפו",
+      "arrivals": [
+        {
+          "line": {"id": "18", "number": "18", "operator": "dan", "color": "#2196F3"},
+          "destination": "Dizengoff Center",
+          "destination_he": "דיזנגוף סנטר",
+          "minutes_until": 4,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "41", "number": "41", "operator": "dan", "color": "#2196F3"},
+          "destination": "Neve Tzedek",
+          "destination_he": "נווה צדק",
+          "minutes_until": 9,
+          "is_realtime": true
+        }
+      ]
+    },
+    "21021": {
+      "station_id": "21021",
+      "station_name": "Herzliya Train Station",
+      "station_name_he": "תחנת רכבת הרצליה",
+      "arrivals": [
+        {
+          "line": {"id": "train_1", "number": "Train", "operator": "israel_railways", "color": "#9C27B0"},
+          "destination": "Tel Aviv",
+          "destination_he": "תל אביב",
+          "minutes_until": 10,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "train_1", "number": "Train", "operator": "israel_railways", "color": "#9C27B0"},
+          "destination": "Haifa",
+          "destination_he": "חיפה",
+          "minutes_until": 22,
+          "is_realtime": true
+        },
+        {
+          "line": {"id": "501", "number": "501", "operator": "metropoline", "color": "#E91E63"},
+          "destination": "Herzliya Center",
+          "destination_he": "מרכז הרצליה",
+          "minutes_until": 7,
+          "is_realtime": false
+        }
+      ]
+    }
+  }
+}

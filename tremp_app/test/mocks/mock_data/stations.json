@@ -1,0 +1,276 @@
+{
+  "stations": [
+    {
+      "id": "25786",
+      "name": "Ben Gurion/Cemetery",
+      "name_he": "בן גוריון/בית העלמין",
+      "location": {"lat": 32.0853, "lon": 34.7818},
+      "lines": [
+        {"id": "273", "number": "273", "operator": "egged", "color": "#4CAF50"},
+        {"id": "89", "number": "89", "operator": "dan", "color": "#2196F3"}
+      ],
+      "direction": "northeast"
+    },
+    {
+      "id": "25787",
+      "name": "Ben Gurion/Dizengoff",
+      "name_he": "בן גוריון/דיזנגוף",
+      "location": {"lat": 32.0858, "lon": 34.7812},
+      "lines": [
+        {"id": "273", "number": "273", "operator": "egged", "color": "#4CAF50"},
+        {"id": "5", "number": "5", "operator": "dan", "color": "#2196F3"}
+      ],
+      "direction": "northeast"
+    },
+    {
+      "id": "21000",
+      "name": "Dizengoff Center",
+      "name_he": "דיזנגוף סנטר",
+      "location": {"lat": 32.0775, "lon": 34.7747},
+      "lines": [
+        {"id": "5", "number": "5", "operator": "dan", "color": "#2196F3"},
+        {"id": "18", "number": "18", "operator": "dan", "color": "#2196F3"},
+        {"id": "61", "number": "61", "operator": "kavim", "color": "#FF9800"}
+      ],
+      "direction": "south"
+    },
+    {
+      "id": "21001",
+      "name": "Arlozorov Terminal",
+      "name_he": "טרמינל ארלוזורוב",
+      "location": {"lat": 32.0956, "lon": 34.7875},
+      "lines": [
+        {"id": "480", "number": "480", "operator": "egged", "color": "#4CAF50"},
+        {"id": "89", "number": "89", "operator": "dan", "color": "#2196F3"},
+        {"id": "273", "number": "273", "operator": "egged", "color": "#4CAF50"},
+        {"id": "405", "number": "405", "operator": "egged", "color": "#4CAF50"}
+      ],
+      "direction": "east"
+    },
+    {
+      "id": "21002",
+      "name": "Reading Terminal",
+      "name_he": "טרמינל רידינג",
+      "location": {"lat": 32.0966, "lon": 34.7696},
+      "lines": [
+        {"id": "273", "number": "273", "operator": "egged", "color": "#4CAF50"},
+        {"id": "47", "number": "47", "operator": "dan", "color": "#2196F3"}
+      ],
+      "direction": "north"
+    },
+    {
+      "id": "21003",
+      "name": "Central Station/South",
+      "name_he": "התחנה המרכזית/דרום",
+      "location": {"lat": 32.0556, "lon": 34.7791},
+      "lines": [
+        {"id": "480", "number": "480", "operator": "egged", "color": "#4CAF50"},
+        {"id": "405", "number": "405", "operator": "egged", "color": "#4CAF50"},
+        {"id": "89", "number": "89", "operator": "dan", "color": "#2196F3"},
+        {"id": "141", "number": "141", "operator": "kavim", "color": "#FF9800"}
+      ],
+      "direction": "south"
+    },
+    {
+      "id": "21004",
+      "name": "Carmel Market",
+      "name_he": "שוק הכרמל",
+      "location": {"lat": 32.0656, "lon": 34.7689},
+      "lines": [
+        {"id": "18", "number": "18", "operator": "dan", "color": "#2196F3"},
+        {"id": "25", "number": "25", "operator": "dan", "color": "#2196F3"}
+      ],
+      "direction": "west"
+    },
+    {
+      "id": "21005",
+      "name": "Rabin Square",
+      "name_he": "כיכר רבין",
+      "location": {"lat": 32.0809, "lon": 34.7811},
+      "lines": [
+        {"id": "5", "number": "5", "operator": "dan", "color": "#2196F3"},
+        {"id": "61", "number": "61", "operator": "kavim", "color": "#FF9800"},
+        {"id": "72", "number": "72", "operator": "dan", "color": "#2196F3"}
+      ],
+      "direction": "north"
+    },
+    {
+      "id": "21006",
+      "name": "Habima",
+      "name_he": "הבימה",
+      "location": {"lat": 32.0721, "lon": 34.7785},
+      "lines": [
+        {"id": "18", "number": "18", "operator": "dan", "color": "#2196F3"},
+        {"id": "25", "number": "25", "operator": "dan", "color": "#2196F3"},
+        {"id": "289", "number": "289", "operator": "egged", "color": "#4CAF50"}
+      ],
+      "direction": "south"
+    },
+    {
+      "id": "21007",
+      "name": "Rothschild/Allenby",
+      "name_he": "רוטשילד/אלנבי",
+      "location": {"lat": 32.0638, "lon": 34.7707},
+      "lines": [
+        {"id": "25", "number": "25", "operator": "dan", "color": "#2196F3"},
+        {"id": "63", "number": "63", "operator": "kavim", "color": "#FF9800"}
+      ],
+      "direction": "west"
+    },
+    {
+      "id": "21008",
+      "name": "Azrieli Center",
+      "name_he": "מרכז עזריאלי",
+      "location": {"lat": 32.0743, "lon": 34.7925},
+      "lines": [
+        {"id": "480", "number": "480", "operator": "egged", "color": "#4CAF50"},
+        {"id": "405", "number": "405", "operator": "egged", "color": "#4CAF50"},
+        {"id": "47", "number": "47", "operator": "dan", "color": "#2196F3"},
+        {"id": "train_1", "number": "Train", "operator": "israel_railways", "color": "#9C27B0"}
+      ],
+      "direction": "east"
+    },
+    {
+      "id": "21009",
+      "name": "Hashalom Train Station",
+      "name_he": "תחנת רכבת השלום",
+      "location": {"lat": 32.0728, "lon": 34.7895},
+      "lines": [
+        {"id": "train_1", "number": "Train", "operator": "israel_railways", "color": "#9C27B0"}
+      ],
+      "direction": "east"
+    },
+    {
+      "id": "21010",
+      "name": "Tel Aviv University",
+      "name_he": "אוניברסיטת תל אביב",
+      "location": {"lat": 32.1133, "lon": 34.8043},
+      "lines": [
+        {"id": "289", "number": "289", "operator": "egged", "color": "#4CAF50"},
+        {"id": "572", "number": "572", "operator": "metropoline", "color": "#E91E63"}
+      ],
+      "direction": "north"
+    },
+    {
+      "id": "21011",
+      "name": "Ramat Aviv Mall",
+      "name_he": "קניון רמת אביב",
+      "location": {"lat": 32.1156, "lon": 34.8156},
+      "lines": [
+        {"id": "47", "number": "47", "operator": "dan", "color": "#2196F3"},
+        {"id": "572", "number": "572", "operator": "metropoline", "color": "#E91E63"},
+        {"id": "25", "number": "25", "operator": "dan", "color": "#2196F3"}
+      ],
+      "direction": "north"
+    },
+    {
+      "id": "21012",
+      "name": "Jaffa Clock Tower",
+      "name_he": "מגדל השעון יפו",
+      "location": {"lat": 32.0519, "lon": 34.7539},
+      "lines": [
+        {"id": "18", "number": "18", "operator": "dan", "color": "#2196F3"},
+        {"id": "41", "number": "41", "operator": "dan", "color": "#2196F3"}
+      ],
+      "direction": "south"
+    },
+    {
+      "id": "21013",
+      "name": "Sarona Market",
+      "name_he": "שרונה מרקט",
+      "location": {"lat": 32.0715, "lon": 34.7867},
+      "lines": [
+        {"id": "5", "number": "5", "operator": "dan", "color": "#2196F3"},
+        {"id": "63", "number": "63", "operator": "kavim", "color": "#FF9800"}
+      ],
+      "direction": "southeast"
+    },
+    {
+      "id": "21014",
+      "name": "Neve Tzedek/Suzanne Dellal",
+      "name_he": "נווה צדק/סוזן דלל",
+      "location": {"lat": 32.0596, "lon": 34.7649},
+      "lines": [
+        {"id": "41", "number": "41", "operator": "dan", "color": "#2196F3"}
+      ],
+      "direction": "southwest"
+    },
+    {
+      "id": "21015",
+      "name": "Florentin",
+      "name_he": "פלורנטין",
+      "location": {"lat": 32.0566, "lon": 34.7696},
+      "lines": [
+        {"id": "41", "number": "41", "operator": "dan", "color": "#2196F3"},
+        {"id": "63", "number": "63", "operator": "kavim", "color": "#FF9800"}
+      ],
+      "direction": "south"
+    },
+    {
+      "id": "21016",
+      "name": "Nahalat Binyamin",
+      "name_he": "נחלת בנימין",
+      "location": {"lat": 32.0653, "lon": 34.7728},
+      "lines": [
+        {"id": "25", "number": "25", "operator": "dan", "color": "#2196F3"},
+        {"id": "18", "number": "18", "operator": "dan", "color": "#2196F3"}
+      ],
+      "direction": "west"
+    },
+    {
+      "id": "21017",
+      "name": "HaYarkon/Gordon",
+      "name_he": "הירקון/גורדון",
+      "location": {"lat": 32.0825, "lon": 34.7693},
+      "lines": [
+        {"id": "47", "number": "47", "operator": "dan", "color": "#2196F3"},
+        {"id": "4", "number": "4", "operator": "dan", "color": "#2196F3"}
+      ],
+      "direction": "northwest"
+    },
+    {
+      "id": "21018",
+      "name": "Tel Aviv Port",
+      "name_he": "נמל תל אביב",
+      "location": {"lat": 32.0967, "lon": 34.7722},
+      "lines": [
+        {"id": "4", "number": "4", "operator": "dan", "color": "#2196F3"}
+      ],
+      "direction": "north"
+    },
+    {
+      "id": "21019",
+      "name": "Kikar Hamedina",
+      "name_he": "כיכר המדינה",
+      "location": {"lat": 32.0867, "lon": 34.7911},
+      "lines": [
+        {"id": "72", "number": "72", "operator": "dan", "color": "#2196F3"},
+        {"id": "89", "number": "89", "operator": "dan", "color": "#2196F3"}
+      ],
+      "direction": "east"
+    },
+    {
+      "id": "21020",
+      "name": "Basel Square",
+      "name_he": "כיכר בזל",
+      "location": {"lat": 32.0889, "lon": 34.7756},
+      "lines": [
+        {"id": "5", "number": "5", "operator": "dan", "color": "#2196F3"},
+        {"id": "72", "number": "72", "operator": "dan", "color": "#2196F3"},
+        {"id": "289", "number": "289", "operator": "egged", "color": "#4CAF50"}
+      ],
+      "direction": "north"
+    },
+    {
+      "id": "21021",
+      "name": "Herzliya Train Station",
+      "name_he": "תחנת רכבת הרצליה",
+      "location": {"lat": 32.1545, "lon": 34.8247},
+      "lines": [
+        {"id": "train_1", "number": "Train", "operator": "israel_railways", "color": "#9C27B0"},
+        {"id": "501", "number": "501", "operator": "metropoline", "color": "#E91E63"}
+      ],
+      "direction": "north"
+    }
+  ]
+}
