@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
 
+import '../../models/station.dart';
+import '../../providers/station_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
+import '../../widgets/station_marker.dart';
 
 /// Map Home Screen - Main map with station discovery
 /// Phase 4A: Basic Map with dark tiles, user location, and zoom controls
+/// Phase 4B: Station markers from API with tap handling
 class MapHomeScreen extends StatefulWidget {
   const MapHomeScreen({super.key});
 
@@ -27,6 +32,9 @@ class _MapHomeScreenState extends State<MapHomeScreen> {
   // User location (simulated for now - will be replaced with actual location)
   LatLng? _userLocation;
   bool _locationLoading = false;
+
+  // Track if initial stations have been loaded
+  bool _initialLoadDone = false;
 
   @override
   void initState() {
@@ -77,6 +85,37 @@ class _MapHomeScreenState extends State<MapHomeScreen> {
     }
   }
 
+  void _onMapReady() {
+    // Load initial stations after map is ready
+    if (!_initialLoadDone) {
+      _initialLoadDone = true;
+      _loadStations();
+    }
+  }
+
+  void _onMapPositionChanged(MapPosition position, bool hasGesture) {
+    // Reload stations when map position changes significantly
+    if (hasGesture) {
+      _loadStations();
+    }
+  }
+
+  void _loadStations() {
+    final provider = context.read<StationProvider>();
+    provider.loadStationsForBounds(_mapController.camera);
+  }
+
+  void _onStationTap(Station station) {
+    final provider = context.read<StationProvider>();
+    provider.selectStation(station);
+  }
+
+  void _onMapTap(TapPosition tapPosition, LatLng point) {
+    // Clear station selection when tapping on empty map area
+    final provider = context.read<StationProvider>();
+    provider.clearSelection();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,45 +142,74 @@ class _MapHomeScreenState extends State<MapHomeScreen> {
             bottom: 60,
             child: _buildLocationButton(),
           ),
+
+          // Station info bottom sheet (when a station is selected)
+          _buildSelectedStationSheet(),
         ],
       ),
     );
   }
 
   Widget _buildMap() {
-    return FlutterMap(
-      mapController: _mapController,
-      options: const MapOptions(
-        initialCenter: _defaultCenter,
-        initialZoom: _defaultZoom,
-        minZoom: _minZoom,
-        maxZoom: _maxZoom,
-        interactionOptions: InteractionOptions(
-          flags: InteractiveFlag.all,
-        ),
-        backgroundColor: AppColors.scaffoldBackground,
-      ),
-      children: [
-        // Dark tile layer - CartoDB Dark Matter
-        TileLayer(
-          urlTemplate:
-              'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-          subdomains: const ['a', 'b', 'c', 'd'],
-          userAgentPackageName: 'com.tremp.app',
-          retinaMode: true,
-        ),
-
-        // User location marker layer
-        if (_userLocation != null)
-          MarkerLayer(
-            markers: [
-              _buildUserLocationMarker(_userLocation!),
-            ],
+    return Consumer<StationProvider>(
+      builder: (context, stationProvider, child) {
+        return FlutterMap(
+          mapController: _mapController,
+          options: MapOptions(
+            initialCenter: _defaultCenter,
+            initialZoom: _defaultZoom,
+            minZoom: _minZoom,
+            maxZoom: _maxZoom,
+            interactionOptions: const InteractionOptions(
+              flags: InteractiveFlag.all,
+            ),
+            backgroundColor: AppColors.scaffoldBackground,
+            onMapReady: _onMapReady,
+            onPositionChanged: _onMapPositionChanged,
+            onTap: _onMapTap,
           ),
+          children: [
+            // Dark tile layer - CartoDB Dark Matter
+            TileLayer(
+              urlTemplate:
+                  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+              subdomains: const ['a', 'b', 'c', 'd'],
+              userAgentPackageName: 'com.tremp.app',
+              retinaMode: true,
+            ),
 
-        // TODO: Phase 4B - Station markers layer will be added here
-      ],
+            // Station markers layer
+            MarkerLayer(
+              markers: _buildStationMarkers(stationProvider),
+            ),
+
+            // User location marker layer
+            if (_userLocation != null)
+              MarkerLayer(
+                markers: [
+                  _buildUserLocationMarker(_userLocation!),
+                ],
+              ),
+          ],
+        );
+      },
     );
+  }
+
+  List<Marker> _buildStationMarkers(StationProvider provider) {
+    return provider.stations.map((station) {
+      final isSelected = provider.selectedStation?.id == station.id;
+      return Marker(
+        point: LatLng(station.location.lat, station.location.lon),
+        width: isSelected ? 36 : 32,
+        height: isSelected ? 36 : 32,
+        child: SimpleStationMarker(
+          station: station,
+          isSelected: isSelected,
+          onTap: () => _onStationTap(station),
+        ),
+      );
+    }).toList();
   }
 
   Marker _buildUserLocationMarker(LatLng location) {
@@ -305,9 +373,178 @@ class _MapHomeScreenState extends State<MapHomeScreen> {
     );
   }
 
+  Widget _buildSelectedStationSheet() {
+    return Consumer<StationProvider>(
+      builder: (context, provider, child) {
+        final station = provider.selectedStation;
+        if (station == null) {
+          return const SizedBox.shrink();
+        }
+
+        return Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: _StationInfoSheet(
+            station: station,
+            onClose: () => provider.clearSelection(),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     _mapController.dispose();
     super.dispose();
+  }
+}
+
+/// Bottom sheet showing selected station info
+class _StationInfoSheet extends StatelessWidget {
+  final Station station;
+  final VoidCallback onClose;
+
+  const _StationInfoSheet({
+    required this.station,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.bottomSheetColor,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Handle bar
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.textTertiary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            // Station header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Row(
+                children: [
+                  // Station icon
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: AppColors.stationMarkerYellow,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.directions_bus,
+                      color: Colors.black87,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Station name and ID
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          station.displayName,
+                          style: AppTextStyles.headline2,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'תחנה ${station.id}',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Close button
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    color: AppColors.textSecondary,
+                    onPressed: onClose,
+                  ),
+                ],
+              ),
+            ),
+
+            // Serving lines
+            if (station.lines.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'קווים עוברים:',
+                  style: AppTextStyles.titleSmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: station.lines.map((line) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: line.displayColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: line.displayColor,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        line.number,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: line.displayColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
   }
 }

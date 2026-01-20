@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
 
 import 'theme/app_theme.dart';
 import 'theme/colors.dart';
+import 'providers/station_provider.dart';
 import 'screens/map_home/map_home_screen.dart';
 import 'screens/lines_browser/lines_browser_screen.dart';
 import 'screens/stations_browser/stations_browser_screen.dart';
@@ -29,30 +31,35 @@ class TrempApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Tremp',
-      debugShowCheckedModeBanner: false,
-
-      // Dark theme configuration
-      theme: AppTheme.darkTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
-
-      // RTL support for Hebrew
-      locale: const Locale('he', 'IL'),
-      supportedLocales: const [
-        Locale('he', 'IL'), // Hebrew (Israel) - Primary
-        Locale('en', 'US'), // English
-        Locale('ar', 'IL'), // Arabic
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => StationProvider()),
       ],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+      child: MaterialApp(
+        title: 'Tremp',
+        debugShowCheckedModeBanner: false,
 
-      // Home screen with bottom navigation
-      home: const MainNavigationScreen(),
+        // Dark theme configuration
+        theme: AppTheme.darkTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.dark,
+
+        // RTL support for Hebrew
+        locale: const Locale('he', 'IL'),
+        supportedLocales: const [
+          Locale('he', 'IL'), // Hebrew (Israel) - Primary
+          Locale('en', 'US'), // English
+          Locale('ar', 'IL'), // Arabic
+        ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+
+        // Home screen with bottom navigation
+        home: const MainNavigationScreen(),
+      ),
     );
   }
 }

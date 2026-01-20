@@ -83,10 +83,10 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 - [x] 4A.4 Add zoom controls
 
 ### 4B: Station Markers
-- [ ] 4B.1 Create `lib/widgets/station_marker.dart` (yellow badge style)
-- [ ] 4B.2 Connect to `/stations` endpoint via mock server
-- [ ] 4B.3 Display station markers on map
-- [ ] 4B.4 Implement marker tap handling
+- [x] 4B.1 Create `lib/widgets/station_marker.dart` (yellow badge style)
+- [x] 4B.2 Connect to `/stations` endpoint via mock server
+- [x] 4B.3 Display station markers on map
+- [x] 4B.4 Implement marker tap handling
 
 ### 4C: Bottom Sheet
 - [ ] 4C.1 Create `lib/widgets/bottom_sheet_container.dart`
@@ -251,7 +251,8 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 
 - **Current Phase:** 4 (Map Home Screen)
 - **Started:** 2026-01-18
-- **Last Updated:** 2026-01-19
+- **Last Updated:** 2026-01-20
 - **Phase 1 Completed:** 2026-01-18
 - **Phase 2 Completed:** 2026-01-19
 - **Phase 3 Completed:** 2026-01-19
+- **Phase 4B Completed:** 2026-01-20
