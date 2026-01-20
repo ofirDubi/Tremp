@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/arrival.dart';
+import '../models/location.dart';
+import '../models/place.dart';
+import '../models/route.dart';
 import '../models/station.dart';
 
 /// API service for communicating with the Tremp backend
@@ -145,6 +148,82 @@ class ApiService {
       throw ApiException(
         statusCode: response.statusCode,
         message: 'Failed to fetch nearby stations',
+      );
+    }
+  }
+
+  /// Search for places (autocomplete)
+  Future<List<Place>> searchPlaces({
+    required String query,
+    double? lat,
+    double? lon,
+    int limit = 10,
+  }) async {
+    final queryParams = <String, String>{
+      'q': query,
+      'limit': limit.toString(),
+    };
+    if (lat != null) queryParams['lat'] = lat.toString();
+    if (lon != null) queryParams['lon'] = lon.toString();
+
+    final uri = Uri.parse('$_baseUrl/search').replace(
+      queryParameters: queryParams,
+    );
+
+    final response = await _client.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final results = data['results'] as List<dynamic>;
+      return results
+          .map((e) => Place.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: 'Failed to search places',
+      );
+    }
+  }
+
+  /// Calculate transit route
+  Future<List<TransitRoute>> calculateRoute({
+    required Location origin,
+    required Location destination,
+    DateTime? departureTime,
+    DateTime? arrivalTime,
+    RouteMode mode = RouteMode.leaveNow,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/route');
+
+    final body = <String, dynamic>{
+      'origin': origin.toJson(),
+      'destination': destination.toJson(),
+      'mode': mode.toJson(),
+    };
+    if (departureTime != null) {
+      body['departure_time'] = departureTime.toIso8601String();
+    }
+    if (arrivalTime != null) {
+      body['arrival_time'] = arrivalTime.toIso8601String();
+    }
+
+    final response = await _client.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final routes = data['routes'] as List<dynamic>;
+      return routes
+          .map((e) => TransitRoute.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: 'Failed to calculate route',
       );
     }
   }

@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/location.dart';
 import '../../models/station.dart';
 import '../../providers/station_provider.dart';
 import '../../theme/colors.dart';
@@ -12,6 +13,7 @@ import '../../widgets/favorites_tab.dart';
 import '../../widgets/nearby_routes_tab.dart';
 import '../../widgets/station_info_sheet.dart';
 import '../../widgets/station_marker.dart';
+import '../route_search/route_search_screen.dart';
 
 /// Map Home Screen - Main map with station discovery
 /// Phase 4A: Basic Map with dark tiles, user location, and zoom controls
@@ -249,11 +251,24 @@ class _MapHomeScreenState extends State<MapHomeScreen> {
     );
   }
 
+  void _navigateToRouteSearch() {
+    // Convert LatLng to Location model
+    final userLoc = _userLocation != null
+        ? Location(lat: _userLocation!.latitude, lon: _userLocation!.longitude)
+        : null;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => RouteSearchScreen(
+          userLocation: userLoc,
+        ),
+      ),
+    );
+  }
+
   Widget _buildSearchBar() {
     return GestureDetector(
-      onTap: () {
-        // TODO: Phase 5 - Navigate to route search screen
-      },
+      onTap: _navigateToRouteSearch,
       child: Container(
         margin: const EdgeInsets.all(16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

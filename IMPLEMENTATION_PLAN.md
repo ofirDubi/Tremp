@@ -108,28 +108,28 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 **Goal:** Implement search and route planning
 
 ### 5A: Screen Structure
-- [ ] 5A.1 Create `lib/screens/route_search/route_search_screen.dart`
-- [ ] 5A.2 Implement Directions/Lines/Stations tab bar
-- [ ] 5A.3 Create origin/destination input fields
+- [x] 5A.1 Create `lib/screens/route_search/route_search_screen.dart`
+- [x] 5A.2 Implement Directions/Lines/Stations tab bar
+- [x] 5A.3 Create origin/destination input fields
 
 ### 5B: Search Functionality
-- [ ] 5B.1 Connect to `/search` endpoint for autocomplete
-- [ ] 5B.2 Implement recent directions storage (SharedPreferences)
-- [ ] 5B.3 Implement favorites section (home, work, custom)
-- [ ] 5B.4 Implement "Leave now" time selector
+- [x] 5B.1 Connect to `/search` endpoint for autocomplete
+- [x] 5B.2 Implement recent directions storage (SharedPreferences)
+- [x] 5B.3 Implement favorites section (home, work, custom)
+- [x] 5B.4 Implement "Leave now" time selector
 
 ### 5C: Route Results
-- [ ] 5C.1 Connect to `/route` endpoint
-- [ ] 5C.2 Display route options with timing
-- [ ] 5C.3 Show route details on tap
+- [x] 5C.1 Connect to `/route` endpoint
+- [x] 5C.2 Display route options with timing
+- [x] 5C.3 Show route details on tap
 
 ### 5D: Tests
-- [ ] 5D.1 MCP Test: Search screen opens from map search bar
-- [ ] 5D.2 MCP Test: Typing in destination shows autocomplete
-- [ ] 5D.3 MCP Test: Favorites section displays saved locations
-- [ ] 5D.4 MCP Test: Route calculation returns results
+- [x] 5D.1 MCP Test: Search screen opens from map search bar
+- [x] 5D.2 MCP Test: Typing in destination shows autocomplete
+- [x] 5D.3 MCP Test: Favorites section displays saved locations
+- [x] 5D.4 MCP Test: Route calculation returns results
 
-**Acceptance Criteria:** All 5D tests pass before proceeding
+**Acceptance Criteria:** All 5D tests pass before proceeding ✅
 
 ---
 
@@ -249,10 +249,11 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 
 ## Status
 
-- **Current Phase:** 5 (Route Search Screen)
+- **Current Phase:** 6 (Lines Browser Screen)
 - **Started:** 2026-01-18
 - **Last Updated:** 2026-01-20
 - **Phase 1 Completed:** 2026-01-18
 - **Phase 2 Completed:** 2026-01-19
 - **Phase 3 Completed:** 2026-01-19
 - **Phase 4 Completed:** 2026-01-20
+- **Phase 5 Completed:** 2026-01-20
