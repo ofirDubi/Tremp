@@ -7,11 +7,16 @@ import '../../models/station.dart';
 import '../../providers/station_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
+import '../../widgets/bottom_sheet_container.dart';
+import '../../widgets/favorites_tab.dart';
+import '../../widgets/nearby_routes_tab.dart';
+import '../../widgets/station_info_sheet.dart';
 import '../../widgets/station_marker.dart';
 
 /// Map Home Screen - Main map with station discovery
 /// Phase 4A: Basic Map with dark tiles, user location, and zoom controls
 /// Phase 4B: Station markers from API with tap handling
+/// Phase 4C: Bottom sheet with Nearby Routes and Favorites tabs
 class MapHomeScreen extends StatefulWidget {
   const MapHomeScreen({super.key});
 
@@ -53,10 +58,17 @@ class _MapHomeScreenState extends State<MapHomeScreen> {
 
     // For now, use Tel Aviv center as simulated user location
     // TODO: Replace with actual geolocation using geolocator package
+    if (!mounted) return;
+
     setState(() {
       _userLocation = _defaultCenter;
       _locationLoading = false;
     });
+
+    // Load nearby stations for the bottom sheet
+    if (_userLocation != null) {
+      context.read<StationProvider>().loadNearbyStations(_userLocation!);
+    }
   }
 
   void _zoomIn() {
@@ -132,19 +144,19 @@ class _MapHomeScreenState extends State<MapHomeScreen> {
           // Zoom controls (right side)
           Positioned(
             right: 16,
-            bottom: 120,
+            bottom: 200,
             child: _buildZoomControls(),
           ),
 
           // Center on user button
           Positioned(
             right: 16,
-            bottom: 60,
+            bottom: 140,
             child: _buildLocationButton(),
           ),
 
-          // Station info bottom sheet (when a station is selected)
-          _buildSelectedStationSheet(),
+          // Bottom sheet layer (either selected station or nearby/favorites)
+          _buildBottomSheet(),
         ],
       ),
     );
@@ -373,21 +385,42 @@ class _MapHomeScreenState extends State<MapHomeScreen> {
     );
   }
 
-  Widget _buildSelectedStationSheet() {
+  Widget _buildBottomSheet() {
     return Consumer<StationProvider>(
       builder: (context, provider, child) {
         final station = provider.selectedStation;
-        if (station == null) {
-          return const SizedBox.shrink();
+
+        // If a station is selected, show the station info sheet
+        if (station != null) {
+          return Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: StationInfoSheet(
+              station: station,
+              onClose: () => provider.clearSelection(),
+            ),
+          );
         }
 
+        // Otherwise, show the nearby routes / favorites bottom sheet
         return Positioned(
           left: 0,
           right: 0,
           bottom: 0,
-          child: _StationInfoSheet(
-            station: station,
-            onClose: () => provider.clearSelection(),
+          child: BottomSheetContainer(
+            tabs: const [
+              BottomSheetTab(
+                label: 'קווים קרובים',
+                icon: Icons.near_me,
+                content: NearbyRoutesTab(),
+              ),
+              BottomSheetTab(
+                label: 'מועדפים',
+                icon: Icons.star_outline,
+                content: FavoritesTab(),
+              ),
+            ],
           ),
         );
       },
@@ -398,153 +431,5 @@ class _MapHomeScreenState extends State<MapHomeScreen> {
   void dispose() {
     _mapController.dispose();
     super.dispose();
-  }
-}
-
-/// Bottom sheet showing selected station info
-class _StationInfoSheet extends StatelessWidget {
-  final Station station;
-  final VoidCallback onClose;
-
-  const _StationInfoSheet({
-    required this.station,
-    required this.onClose,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.bottomSheetColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 10,
-            offset: Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Handle bar
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.textTertiary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-
-            // Station header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: Row(
-                children: [
-                  // Station icon
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.stationMarkerYellow,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.directions_bus,
-                      color: Colors.black87,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Station name and ID
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          station.displayName,
-                          style: AppTextStyles.headline2,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'תחנה ${station.id}',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Close button
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    color: AppColors.textSecondary,
-                    onPressed: onClose,
-                  ),
-                ],
-              ),
-            ),
-
-            // Serving lines
-            if (station.lines.isNotEmpty) ...[
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'קווים עוברים:',
-                  style: AppTextStyles.titleSmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: station.lines.map((line) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: line.displayColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: line.displayColor,
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Text(
-                        line.number,
-                        style: AppTextStyles.bodyMedium.copyWith(
-                          color: line.displayColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
   }
 }

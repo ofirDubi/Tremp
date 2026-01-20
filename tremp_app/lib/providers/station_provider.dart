@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
+import '../models/arrival.dart';
 import '../models/station.dart';
 import '../services/api_service.dart';
 
@@ -12,6 +14,16 @@ class StationProvider extends ChangeNotifier {
   Station? _selectedStation;
   bool _isLoading = false;
   String? _error;
+
+  // Arrivals for selected station
+  List<Arrival> _arrivals = [];
+  bool _arrivalsLoading = false;
+  String? _arrivalsError;
+
+  // Nearby stations for bottom sheet
+  List<Station> _nearbyStations = [];
+  bool _nearbyLoading = false;
+  LatLng? _lastNearbyLocation;
 
   // Track the last loaded bounds to avoid redundant requests
   MapCamera? _lastLoadedBounds;
@@ -30,6 +42,21 @@ class StationProvider extends ChangeNotifier {
 
   /// Error message if loading failed
   String? get error => _error;
+
+  /// Arrivals for the selected station
+  List<Arrival> get arrivals => _arrivals;
+
+  /// Whether arrivals are being loaded
+  bool get arrivalsLoading => _arrivalsLoading;
+
+  /// Error message if arrivals loading failed
+  String? get arrivalsError => _arrivalsError;
+
+  /// Nearby stations for bottom sheet
+  List<Station> get nearbyStations => _nearbyStations;
+
+  /// Whether nearby stations are being loaded
+  bool get nearbyLoading => _nearbyLoading;
 
   /// Load stations within the visible map bounds
   Future<void> loadStationsForBounds(MapCamera camera) async {
@@ -96,6 +123,62 @@ class StationProvider extends ChangeNotifier {
   void selectStation(Station? station) {
     if (_selectedStation != station) {
       _selectedStation = station;
+      _arrivals = [];
+      _arrivalsError = null;
+      notifyListeners();
+
+      // Load arrivals for the selected station
+      if (station != null) {
+        loadArrivalsForStation(station.id);
+      }
+    }
+  }
+
+  /// Load arrivals for a station
+  Future<void> loadArrivalsForStation(String stationId) async {
+    _arrivalsLoading = true;
+    _arrivalsError = null;
+    notifyListeners();
+
+    try {
+      final arrivals = await _apiService.getArrivals(stationId: stationId);
+      _arrivals = arrivals;
+      _arrivalsError = null;
+    } catch (e) {
+      _arrivalsError = e.toString();
+      debugPrint('Error loading arrivals: $e');
+    } finally {
+      _arrivalsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Load nearby stations for the bottom sheet
+  Future<void> loadNearbyStations(LatLng location, {int radius = 500}) async {
+    // Check if we need to reload (location changed significantly)
+    if (_lastNearbyLocation != null) {
+      final distance = const Distance().distance(location, _lastNearbyLocation!);
+      if (distance < 100) {
+        // Within 100m, no need to reload
+        return;
+      }
+    }
+
+    _nearbyLoading = true;
+    notifyListeners();
+
+    try {
+      final stations = await _apiService.getNearbyStations(
+        lat: location.latitude,
+        lon: location.longitude,
+        radius: radius,
+      );
+      _nearbyStations = stations;
+      _lastNearbyLocation = location;
+    } catch (e) {
+      debugPrint('Error loading nearby stations: $e');
+    } finally {
+      _nearbyLoading = false;
       notifyListeners();
     }
   }
@@ -104,6 +187,8 @@ class StationProvider extends ChangeNotifier {
   void clearSelection() {
     if (_selectedStation != null) {
       _selectedStation = null;
+      _arrivals = [];
+      _arrivalsError = null;
       notifyListeners();
     }
   }

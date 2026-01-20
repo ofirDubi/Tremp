@@ -1,13 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+import '../models/arrival.dart';
 import '../models/station.dart';
 
 /// API service for communicating with the Tremp backend
 class ApiService {
   /// Base URL for the API (mock server by default)
-  static const String _mockServerUrl = 'http://localhost:8080';
-  static const String _realServerUrl = 'http://localhost:8000';
+  /// Note: Android emulator uses 10.0.2.2 to reach host localhost
+  static const String _mockServerUrl = 'http://10.0.2.2:8080';
+  static const String _realServerUrl = 'http://10.0.2.2:8000';
 
   final String _baseUrl;
   final http.Client _client;
@@ -80,6 +82,69 @@ class ApiService {
       throw ApiException(
         statusCode: response.statusCode,
         message: 'Failed to fetch station',
+      );
+    }
+  }
+
+  /// Get real-time arrivals for a station
+  Future<List<Arrival>> getArrivals({
+    required String stationId,
+    int limit = 20,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/arrivals').replace(
+      queryParameters: {
+        'station_id': stationId,
+        'limit': limit.toString(),
+      },
+    );
+
+    final response = await _client.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final arrivals = data['arrivals'] as List<dynamic>;
+      return arrivals
+          .map((e) => Arrival.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else if (response.statusCode == 404) {
+      throw ApiException(
+        statusCode: 404,
+        message: 'Station not found',
+      );
+    } else {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: 'Failed to fetch arrivals',
+      );
+    }
+  }
+
+  /// Get stations near a location (for Nearby Routes)
+  Future<List<Station>> getNearbyStations({
+    required double lat,
+    required double lon,
+    int radius = 500,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/stations/nearby').replace(
+      queryParameters: {
+        'lat': lat.toString(),
+        'lon': lon.toString(),
+        'radius': radius.toString(),
+      },
+    );
+
+    final response = await _client.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final stations = data['stations'] as List<dynamic>;
+      return stations
+          .map((e) => Station.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: 'Failed to fetch nearby stations',
       );
     }
   }

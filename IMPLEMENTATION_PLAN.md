@@ -89,18 +89,18 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 - [x] 4B.4 Implement marker tap handling
 
 ### 4C: Bottom Sheet
-- [ ] 4C.1 Create `lib/widgets/bottom_sheet_container.dart`
-- [ ] 4C.2 Implement "Nearby Routes" tab
-- [ ] 4C.3 Implement "Favorites" tab
-- [ ] 4C.4 Create station info view with arrivals
+- [x] 4C.1 Create `lib/widgets/bottom_sheet_container.dart`
+- [x] 4C.2 Implement "Nearby Routes" tab
+- [x] 4C.3 Implement "Favorites" tab
+- [x] 4C.4 Create station info view with arrivals
 
 ### 4D: Tests
-- [ ] 4D.1 MCP Test: Map loads with station markers visible
-- [ ] 4D.2 MCP Test: Tap marker → bottom sheet shows station name
-- [ ] 4D.3 MCP Test: Bottom sheet shows arrival times from mock
-- [ ] 4D.4 MCP Test: Nearby/Favorites tabs switch correctly
+- [x] 4D.1 MCP Test: Map loads with station markers visible
+- [x] 4D.2 MCP Test: Tap marker → bottom sheet shows station name
+- [x] 4D.3 MCP Test: Bottom sheet shows arrival times from mock
+- [x] 4D.4 MCP Test: Nearby/Favorites tabs switch correctly
 
-**Acceptance Criteria:** All 4D tests pass before proceeding
+**Acceptance Criteria:** All 4D tests pass before proceeding ✅
 
 ---
 
@@ -249,10 +249,10 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 
 ## Status
 
-- **Current Phase:** 4 (Map Home Screen)
+- **Current Phase:** 5 (Route Search Screen)
 - **Started:** 2026-01-18
 - **Last Updated:** 2026-01-20
 - **Phase 1 Completed:** 2026-01-18
 - **Phase 2 Completed:** 2026-01-19
 - **Phase 3 Completed:** 2026-01-19
-- **Phase 4B Completed:** 2026-01-20
+- **Phase 4 Completed:** 2026-01-20
