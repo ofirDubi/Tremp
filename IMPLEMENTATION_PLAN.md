@@ -77,10 +77,10 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 **Goal:** Implement main map screen with station discovery
 
 ### 4A: Basic Map
-- [ ] 4A.1 Create `lib/screens/map_home/map_home_screen.dart`
-- [ ] 4A.2 Configure flutter_map with dark tiles (CartoDB Dark Matter)
-- [ ] 4A.3 Add user location marker
-- [ ] 4A.4 Add zoom controls
+- [x] 4A.1 Create `lib/screens/map_home/map_home_screen.dart`
+- [x] 4A.2 Configure flutter_map with dark tiles (CartoDB Dark Matter)
+- [x] 4A.3 Add user location marker
+- [x] 4A.4 Add zoom controls
 
 ### 4B: Station Markers
 - [ ] 4B.1 Create `lib/widgets/station_marker.dart` (yellow badge style)
