@@ -137,28 +137,28 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 **Goal:** Implement lines browsing and search
 
 ### 6A: Screen Structure
-- [ ] 6A.1 Create `lib/screens/lines_browser/lines_browser_screen.dart`
-- [ ] 6A.2 Create search input field
-- [ ] 6A.3 Create `lib/widgets/line_card.dart`
+- [x] 6A.1 Create `lib/screens/lines_browser/lines_browser_screen.dart`
+- [x] 6A.2 Create search input field
+- [x] 6A.3 Create `lib/widgets/line_card.dart`
 
 ### 6B: Data & Search
-- [ ] 6B.1 Connect to `/lines` endpoint
-- [ ] 6B.2 Implement search by line number
-- [ ] 6B.3 Implement search by destination
-- [ ] 6B.4 Display operator logos (Egged, Dan, etc.)
+- [x] 6B.1 Connect to `/lines` endpoint
+- [x] 6B.2 Implement search by line number
+- [x] 6B.3 Implement search by destination
+- [x] 6B.4 Display operator logos (Egged, Dan, etc.)
 
 ### 6C: Line Details
-- [ ] 6C.1 Create line detail screen
-- [ ] 6C.2 Show all stops on the line
-- [ ] 6C.3 Implement recent lines storage
+- [x] 6C.1 Create line detail screen
+- [x] 6C.2 Show all stops on the line
+- [x] 6C.3 Implement recent lines storage
 
 ### 6D: Tests
-- [ ] 6D.1 MCP Test: Lines tab shows list of lines
-- [ ] 6D.2 MCP Test: Search by number "273" finds correct line
-- [ ] 6D.3 MCP Test: Line card shows operator logo
-- [ ] 6D.4 MCP Test: Tap line → shows stops
+- [x] 6D.1 MCP Test: Lines tab shows list of lines
+- [x] 6D.2 MCP Test: Search by number "273" finds correct line
+- [x] 6D.3 MCP Test: Line card shows operator logo
+- [x] 6D.4 MCP Test: Tap line → shows stops
 
-**Acceptance Criteria:** All 6D tests pass before proceeding
+**Acceptance Criteria:** All 6D tests pass before proceeding ✅
 
 ---
 
@@ -249,11 +249,12 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 
 ## Status
 
-- **Current Phase:** 6 (Lines Browser Screen)
+- **Current Phase:** 7 (Stations Browser Screen)
 - **Started:** 2026-01-18
-- **Last Updated:** 2026-01-20
+- **Last Updated:** 2026-01-21
 - **Phase 1 Completed:** 2026-01-18
 - **Phase 2 Completed:** 2026-01-19
 - **Phase 3 Completed:** 2026-01-19
 - **Phase 4 Completed:** 2026-01-20
 - **Phase 5 Completed:** 2026-01-20
+- **Phase 6 Completed:** 2026-01-21
