@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/arrival.dart';
+import '../models/line.dart';
 import '../models/location.dart';
 import '../models/place.dart';
 import '../models/route.dart';
@@ -122,6 +123,38 @@ class ApiService {
     }
   }
 
+  /// Search stations by ID or name
+  Future<List<Station>> searchStations({
+    String? query,
+    int limit = 50,
+  }) async {
+    final queryParams = <String, String>{
+      'limit': limit.toString(),
+    };
+    if (query != null && query.isNotEmpty) {
+      queryParams['q'] = query;
+    }
+
+    final uri = Uri.parse('$_baseUrl/stations/search').replace(
+      queryParameters: queryParams,
+    );
+
+    final response = await _client.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final stations = data['stations'] as List<dynamic>;
+      return stations
+          .map((e) => Station.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: 'Failed to search stations',
+      );
+    }
+  }
+
   /// Get stations near a location (for Nearby Routes)
   Future<List<Station>> getNearbyStations({
     required double lat,
@@ -148,6 +181,64 @@ class ApiService {
       throw ApiException(
         statusCode: response.statusCode,
         message: 'Failed to fetch nearby stations',
+      );
+    }
+  }
+
+  /// Get transit lines
+  Future<List<Line>> getLines({
+    String? query,
+    String? operator,
+    int limit = 50,
+  }) async {
+    final queryParams = <String, String>{
+      'limit': limit.toString(),
+    };
+    if (query != null && query.isNotEmpty) {
+      queryParams['q'] = query;
+    }
+    if (operator != null && operator.isNotEmpty) {
+      queryParams['operator'] = operator;
+    }
+
+    final uri = Uri.parse('$_baseUrl/lines').replace(
+      queryParameters: queryParams,
+    );
+
+    final response = await _client.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final lines = data['lines'] as List<dynamic>;
+      return lines
+          .map((e) => Line.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } else {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: 'Failed to fetch lines',
+      );
+    }
+  }
+
+  /// Get a single line by ID (with stops)
+  Future<Line> getLine(String id) async {
+    final uri = Uri.parse('$_baseUrl/line/$id');
+
+    final response = await _client.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      return Line.fromJson(data);
+    } else if (response.statusCode == 404) {
+      throw ApiException(
+        statusCode: 404,
+        message: 'Line not found',
+      );
+    } else {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: 'Failed to fetch line',
       );
     }
   }

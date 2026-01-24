@@ -166,28 +166,28 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 **Goal:** Implement stations browsing with line badges
 
 ### 7A: Screen Structure
-- [ ] 7A.1 Create `lib/screens/stations_browser/stations_browser_screen.dart`
-- [ ] 7A.2 Create search input field
-- [ ] 7A.3 Create `lib/widgets/station_card.dart`
+- [x] 7A.1 Create `lib/screens/stations_browser/stations_browser_screen.dart`
+- [x] 7A.2 Create search input field
+- [x] 7A.3 Create `lib/widgets/station_card.dart`
 
 ### 7B: Data & Search
-- [ ] 7B.1 Connect to `/stations` endpoint (full list mode)
-- [ ] 7B.2 Implement search by station ID
-- [ ] 7B.3 Implement search by station name
-- [ ] 7B.4 Create `lib/widgets/line_badge.dart` (colored badges)
+- [x] 7B.1 Connect to `/stations` endpoint (full list mode)
+- [x] 7B.2 Implement search by station ID
+- [x] 7B.3 Implement search by station name
+- [x] 7B.4 Create `lib/widgets/line_badge.dart` (colored badges)
 
 ### 7C: Station Details
-- [ ] 7C.1 Station card shows all serving lines as badges
-- [ ] 7C.2 Implement recent stations storage
-- [ ] 7C.3 Tap station → show arrivals
+- [x] 7C.1 Station card shows all serving lines as badges
+- [x] 7C.2 Implement recent stations storage
+- [x] 7C.3 Tap station → show arrivals
 
 ### 7D: Tests
-- [ ] 7D.1 MCP Test: Stations tab shows list of stations
-- [ ] 7D.2 MCP Test: Search by ID "25786" finds correct station
-- [ ] 7D.3 MCP Test: Station card shows colored line badges
-- [ ] 7D.4 MCP Test: Tap station → shows real-time arrivals
+- [x] 7D.1 MCP Test: Stations tab shows list of stations
+- [x] 7D.2 MCP Test: Search by ID "25786" finds correct station
+- [x] 7D.3 MCP Test: Station card shows colored line badges
+- [x] 7D.4 MCP Test: Tap station → shows real-time arrivals
 
-**Acceptance Criteria:** All 7D tests pass before proceeding
+**Acceptance Criteria:** All 7D tests pass before proceeding ✅
 
 ---
 
@@ -249,12 +249,13 @@ This is the working checklist for implementing the UI refactor. Tasks must be co
 
 ## Status
 
-- **Current Phase:** 7 (Stations Browser Screen)
+- **Current Phase:** 8 (Profile/Settings Screen)
 - **Started:** 2026-01-18
-- **Last Updated:** 2026-01-21
+- **Last Updated:** 2026-01-24
 - **Phase 1 Completed:** 2026-01-18
 - **Phase 2 Completed:** 2026-01-19
 - **Phase 3 Completed:** 2026-01-19
 - **Phase 4 Completed:** 2026-01-20
 - **Phase 5 Completed:** 2026-01-20
 - **Phase 6 Completed:** 2026-01-21
+- **Phase 7 Completed:** 2026-01-24

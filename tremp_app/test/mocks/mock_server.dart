@@ -102,6 +102,8 @@ class MockServer {
           await _handleGetStations(request);
         } else if (path == '/stations/nearby') {
           await _handleGetNearbyStations(request);
+        } else if (path == '/stations/search') {
+          await _handleSearchStations(request);
         } else if (path.startsWith('/station/')) {
           await _handleGetStation(request);
         } else if (path == '/lines') {
@@ -201,6 +203,30 @@ class MockServer {
         (a['distance_meters'] as int).compareTo(b['distance_meters'] as int));
 
     _sendJson(request.response, {'stations': stationsWithDistance});
+  }
+
+  // GET /stations/search - Search stations by ID or name
+  Future<void> _handleSearchStations(HttpRequest request) async {
+    final params = request.uri.queryParameters;
+
+    final query = params['q']?.toLowerCase();
+    final limit = int.tryParse(params['limit'] ?? '50') ?? 50;
+
+    var stations = (_stationsData['stations'] as List).toList();
+
+    // Filter by query (searches ID and name)
+    if (query != null && query.isNotEmpty) {
+      stations = stations.where((station) {
+        final id = (station['id'] as String).toLowerCase();
+        final name = (station['name'] as String).toLowerCase();
+        final nameHe = (station['name_he'] as String?)?.toLowerCase() ?? '';
+        return id.contains(query) ||
+               name.contains(query) ||
+               nameHe.contains(query);
+      }).toList();
+    }
+
+    _sendJson(request.response, {'stations': stations.take(limit).toList()});
   }
 
   // GET /station/{id} - Get station details

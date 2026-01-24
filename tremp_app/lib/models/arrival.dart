@@ -57,6 +57,13 @@ class Arrival {
     return arrivalTime.difference(currentTime).inMinutes;
   }
 
+  /// Formatted arrival time (HH:mm)
+  String get formattedTime {
+    final hour = arrivalTime.hour.toString().padLeft(2, '0');
+    final minute = arrivalTime.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
   @override
   String toString() =>
       'Arrival(${line.number} -> $destination at $arrivalTime)';
