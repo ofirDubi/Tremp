@@ -1,0 +1,439 @@
+{
+  "lines": [
+    {
+      "id": "273",
+      "number": "273",
+      "operator": "egged",
+      "operator_name": "Egged",
+      "operator_name_he": "אגד",
+      "direction": "Toward Reading Terminal, Tel Aviv",
+      "direction_he": "לכיוון טרמינל רידינג, תל אביב",
+      "color": "#4CAF50",
+      "stops_count": 42,
+      "stops": [
+        {"station_id": "25786", "name": "Ben Gurion/Cemetery", "name_he": "בן גוריון/בית העלמין", "sequence": 1, "location": {"lat": 32.0853, "lon": 34.7818}},
+        {"station_id": "25787", "name": "Ben Gurion/Dizengoff", "name_he": "בן גוריון/דיזנגוף", "sequence": 2, "location": {"lat": 32.0858, "lon": 34.7812}},
+        {"station_id": "21005", "name": "Rabin Square", "name_he": "כיכר רבין", "sequence": 3, "location": {"lat": 32.0809, "lon": 34.7811}},
+        {"station_id": "21001", "name": "Arlozorov Terminal", "name_he": "טרמינל ארלוזורוב", "sequence": 4, "location": {"lat": 32.0956, "lon": 34.7875}},
+        {"station_id": "21002", "name": "Reading Terminal", "name_he": "טרמינל רידינג", "sequence": 5, "location": {"lat": 32.0966, "lon": 34.7696}}
+      ]
+    },
+    {
+      "id": "89",
+      "number": "89",
+      "operator": "dan",
+      "operator_name": "Dan",
+      "operator_name_he": "דן",
+      "direction": "Toward Central Station, Tel Aviv",
+      "direction_he": "לכיוון התחנה המרכזית, תל אביב",
+      "color": "#2196F3",
+      "stops_count": 38,
+      "stops": [
+        {"station_id": "21001", "name": "Arlozorov Terminal", "name_he": "טרמינל ארלוזורוב", "sequence": 1, "location": {"lat": 32.0956, "lon": 34.7875}},
+        {"station_id": "21019", "name": "Kikar Hamedina", "name_he": "כיכר המדינה", "sequence": 2, "location": {"lat": 32.0867, "lon": 34.7911}},
+        {"station_id": "25786", "name": "Ben Gurion/Cemetery", "name_he": "בן גוריון/בית העלמין", "sequence": 3, "location": {"lat": 32.0853, "lon": 34.7818}},
+        {"station_id": "21003", "name": "Central Station/South", "name_he": "התחנה המרכזית/דרום", "sequence": 4, "location": {"lat": 32.0556, "lon": 34.7791}}
+      ]
+    },
+    {
+      "id": "5",
+      "number": "5",
+      "operator": "dan",
+      "operator_name": "Dan",
+      "operator_name_he": "דן",
+      "direction": "Toward Ramat Aviv, Tel Aviv",
+      "direction_he": "לכיוון רמת אביב, תל אביב",
+      "color": "#2196F3",
+      "stops_count": 45,
+      "stops": [
+        {"station_id": "25787", "name": "Ben Gurion/Dizengoff", "name_he": "בן גוריון/דיזנגוף", "sequence": 1, "location": {"lat": 32.0858, "lon": 34.7812}},
+        {"station_id": "21000", "name": "Dizengoff Center", "name_he": "דיזנגוף סנטר", "sequence": 2, "location": {"lat": 32.0775, "lon": 34.7747}},
+        {"station_id": "21005", "name": "Rabin Square", "name_he": "כיכר רבין", "sequence": 3, "location": {"lat": 32.0809, "lon": 34.7811}},
+        {"station_id": "21013", "name": "Sarona Market", "name_he": "שרונה מרקט", "sequence": 4, "location": {"lat": 32.0715, "lon": 34.7867}},
+        {"station_id": "21020", "name": "Basel Square", "name_he": "כיכר בזל", "sequence": 5, "location": {"lat": 32.0889, "lon": 34.7756}}
+      ]
+    },
+    {
+      "id": "18",
+      "number": "18",
+      "operator": "dan",
+      "operator_name": "Dan",
+      "operator_name_he": "דן",
+      "direction": "Toward Jaffa, Tel Aviv",
+      "direction_he": "לכיוון יפו, תל אביב",
+      "color": "#2196F3",
+      "stops_count": 32,
+      "stops": [
+        {"station_id": "21000", "name": "Dizengoff Center", "name_he": "דיזנגוף סנטר", "sequence": 1, "location": {"lat": 32.0775, "lon": 34.7747}},
+        {"station_id": "21006", "name": "Habima", "name_he": "הבימה", "sequence": 2, "location": {"lat": 32.0721, "lon": 34.7785}},
+        {"station_id": "21016", "name": "Nahalat Binyamin", "name_he": "נחלת בנימין", "sequence": 3, "location": {"lat": 32.0653, "lon": 34.7728}},
+        {"station_id": "21004", "name": "Carmel Market", "name_he": "שוק הכרמל", "sequence": 4, "location": {"lat": 32.0656, "lon": 34.7689}},
+        {"station_id": "21012", "name": "Jaffa Clock Tower", "name_he": "מגדל השעון יפו", "sequence": 5, "location": {"lat": 32.0519, "lon": 34.7539}}
+      ]
+    },
+    {
+      "id": "25",
+      "number": "25",
+      "operator": "dan",
+      "operator_name": "Dan",
+      "operator_name_he": "דן",
+      "direction": "Toward Ramat Aviv Mall",
+      "direction_he": "לכיוון קניון רמת אביב",
+      "color": "#2196F3",
+      "stops_count": 35,
+      "stops": [
+        {"station_id": "21007", "name": "Rothschild/Allenby", "name_he": "רוטשילד/אלנבי", "sequence": 1, "location": {"lat": 32.0638, "lon": 34.7707}},
+        {"station_id": "21016", "name": "Nahalat Binyamin", "name_he": "נחלת בנימין", "sequence": 2, "location": {"lat": 32.0653, "lon": 34.7728}},
+        {"station_id": "21006", "name": "Habima", "name_he": "הבימה", "sequence": 3, "location": {"lat": 32.0721, "lon": 34.7785}},
+        {"station_id": "21004", "name": "Carmel Market", "name_he": "שוק הכרמל", "sequence": 4, "location": {"lat": 32.0656, "lon": 34.7689}},
+        {"station_id": "21011", "name": "Ramat Aviv Mall", "name_he": "קניון רמת אביב", "sequence": 5, "location": {"lat": 32.1156, "lon": 34.8156}}
+      ]
+    },
+    {
+      "id": "41",
+      "number": "41",
+      "operator": "dan",
+      "operator_name": "Dan",
+      "operator_name_he": "דן",
+      "direction": "Toward Neve Tzedek",
+      "direction_he": "לכיוון נווה צדק",
+      "color": "#2196F3",
+      "stops_count": 28,
+      "stops": [
+        {"station_id": "21012", "name": "Jaffa Clock Tower", "name_he": "מגדל השעון יפו", "sequence": 1, "location": {"lat": 32.0519, "lon": 34.7539}},
+        {"station_id": "21014", "name": "Neve Tzedek/Suzanne Dellal", "name_he": "נווה צדק/סוזן דלל", "sequence": 2, "location": {"lat": 32.0596, "lon": 34.7649}},
+        {"station_id": "21015", "name": "Florentin", "name_he": "פלורנטין", "sequence": 3, "location": {"lat": 32.0566, "lon": 34.7696}}
+      ]
+    },
+    {
+      "id": "47",
+      "number": "47",
+      "operator": "dan",
+      "operator_name": "Dan",
+      "operator_name_he": "דן",
+      "direction": "Toward Ramat Aviv Mall",
+      "direction_he": "לכיוון קניון רמת אביב",
+      "color": "#2196F3",
+      "stops_count": 40,
+      "stops": [
+        {"station_id": "21002", "name": "Reading Terminal", "name_he": "טרמינל רידינג", "sequence": 1, "location": {"lat": 32.0966, "lon": 34.7696}},
+        {"station_id": "21017", "name": "HaYarkon/Gordon", "name_he": "הירקון/גורדון", "sequence": 2, "location": {"lat": 32.0825, "lon": 34.7693}},
+        {"station_id": "21008", "name": "Azrieli Center", "name_he": "מרכז עזריאלי", "sequence": 3, "location": {"lat": 32.0743, "lon": 34.7925}},
+        {"station_id": "21011", "name": "Ramat Aviv Mall", "name_he": "קניון רמת אביב", "sequence": 4, "location": {"lat": 32.1156, "lon": 34.8156}}
+      ]
+    },
+    {
+      "id": "61",
+      "number": "61",
+      "operator": "kavim",
+      "operator_name": "Kavim",
+      "operator_name_he": "קווים",
+      "direction": "Toward Rabin Square",
+      "direction_he": "לכיוון כיכר רבין",
+      "color": "#FF9800",
+      "stops_count": 25,
+      "stops": [
+        {"station_id": "21000", "name": "Dizengoff Center", "name_he": "דיזנגוף סנטר", "sequence": 1, "location": {"lat": 32.0775, "lon": 34.7747}},
+        {"station_id": "21005", "name": "Rabin Square", "name_he": "כיכר רבין", "sequence": 2, "location": {"lat": 32.0809, "lon": 34.7811}}
+      ]
+    },
+    {
+      "id": "63",
+      "number": "63",
+      "operator": "kavim",
+      "operator_name": "Kavim",
+      "operator_name_he": "קווים",
+      "direction": "Toward Florentin",
+      "direction_he": "לכיוון פלורנטין",
+      "color": "#FF9800",
+      "stops_count": 22,
+      "stops": [
+        {"station_id": "21007", "name": "Rothschild/Allenby", "name_he": "רוטשילד/אלנבי", "sequence": 1, "location": {"lat": 32.0638, "lon": 34.7707}},
+        {"station_id": "21013", "name": "Sarona Market", "name_he": "שרונה מרקט", "sequence": 2, "location": {"lat": 32.0715, "lon": 34.7867}},
+        {"station_id": "21015", "name": "Florentin", "name_he": "פלורנטין", "sequence": 3, "location": {"lat": 32.0566, "lon": 34.7696}}
+      ]
+    },
+    {
+      "id": "72",
+      "number": "72",
+      "operator": "dan",
+      "operator_name": "Dan",
+      "operator_name_he": "דן",
+      "direction": "Toward Basel Square",
+      "direction_he": "לכיוון כיכר בזל",
+      "color": "#2196F3",
+      "stops_count": 30,
+      "stops": [
+        {"station_id": "21005", "name": "Rabin Square", "name_he": "כיכר רבין", "sequence": 1, "location": {"lat": 32.0809, "lon": 34.7811}},
+        {"station_id": "21019", "name": "Kikar Hamedina", "name_he": "כיכר המדינה", "sequence": 2, "location": {"lat": 32.0867, "lon": 34.7911}},
+        {"station_id": "21020", "name": "Basel Square", "name_he": "כיכר בזל", "sequence": 3, "location": {"lat": 32.0889, "lon": 34.7756}}
+      ]
+    },
+    {
+      "id": "4",
+      "number": "4",
+      "operator": "dan",
+      "operator_name": "Dan",
+      "operator_name_he": "דן",
+      "direction": "Toward Tel Aviv Port",
+      "direction_he": "לכיוון נמל תל אביב",
+      "color": "#2196F3",
+      "stops_count": 20,
+      "stops": [
+        {"station_id": "21017", "name": "HaYarkon/Gordon", "name_he": "הירקון/גורדון", "sequence": 1, "location": {"lat": 32.0825, "lon": 34.7693}},
+        {"station_id": "21018", "name": "Tel Aviv Port", "name_he": "נמל תל אביב", "sequence": 2, "location": {"lat": 32.0967, "lon": 34.7722}}
+      ]
+    },
+    {
+      "id": "141",
+      "number": "141",
+      "operator": "kavim",
+      "operator_name": "Kavim",
+      "operator_name_he": "קווים",
+      "direction": "Toward Central Station",
+      "direction_he": "לכיוון התחנה המרכזית",
+      "color": "#FF9800",
+      "stops_count": 35,
+      "stops": [
+        {"station_id": "21003", "name": "Central Station/South", "name_he": "התחנה המרכזית/דרום", "sequence": 1, "location": {"lat": 32.0556, "lon": 34.7791}}
+      ]
+    },
+    {
+      "id": "289",
+      "number": "289",
+      "operator": "egged",
+      "operator_name": "Egged",
+      "operator_name_he": "אגד",
+      "direction": "Toward Tel Aviv University",
+      "direction_he": "לכיוון אוניברסיטת תל אביב",
+      "color": "#4CAF50",
+      "stops_count": 48,
+      "stops": [
+        {"station_id": "21006", "name": "Habima", "name_he": "הבימה", "sequence": 1, "location": {"lat": 32.0721, "lon": 34.7785}},
+        {"station_id": "21020", "name": "Basel Square", "name_he": "כיכר בזל", "sequence": 2, "location": {"lat": 32.0889, "lon": 34.7756}},
+        {"station_id": "21010", "name": "Tel Aviv University", "name_he": "אוניברסיטת תל אביב", "sequence": 3, "location": {"lat": 32.1133, "lon": 34.8043}}
+      ]
+    },
+    {
+      "id": "405",
+      "number": "405",
+      "operator": "egged",
+      "operator_name": "Egged",
+      "operator_name_he": "אגד",
+      "direction": "Toward Jerusalem",
+      "direction_he": "לכיוון ירושלים",
+      "color": "#4CAF50",
+      "stops_count": 15,
+      "stops": [
+        {"station_id": "21001", "name": "Arlozorov Terminal", "name_he": "טרמינל ארלוזורוב", "sequence": 1, "location": {"lat": 32.0956, "lon": 34.7875}},
+        {"station_id": "21008", "name": "Azrieli Center", "name_he": "מרכז עזריאלי", "sequence": 2, "location": {"lat": 32.0743, "lon": 34.7925}},
+        {"station_id": "21003", "name": "Central Station/South", "name_he": "התחנה המרכזית/דרום", "sequence": 3, "location": {"lat": 32.0556, "lon": 34.7791}}
+      ]
+    },
+    {
+      "id": "480",
+      "number": "480",
+      "operator": "egged",
+      "operator_name": "Egged",
+      "operator_name_he": "אגד",
+      "direction": "Toward Haifa",
+      "direction_he": "לכיוון חיפה",
+      "color": "#4CAF50",
+      "stops_count": 20,
+      "stops": [
+        {"station_id": "21001", "name": "Arlozorov Terminal", "name_he": "טרמינל ארלוזורוב", "sequence": 1, "location": {"lat": 32.0956, "lon": 34.7875}},
+        {"station_id": "21008", "name": "Azrieli Center", "name_he": "מרכז עזריאלי", "sequence": 2, "location": {"lat": 32.0743, "lon": 34.7925}},
+        {"station_id": "21003", "name": "Central Station/South", "name_he": "התחנה המרכזית/דרום", "sequence": 3, "location": {"lat": 32.0556, "lon": 34.7791}}
+      ]
+    },
+    {
+      "id": "501",
+      "number": "501",
+      "operator": "metropoline",
+      "operator_name": "Metropoline",
+      "operator_name_he": "מטרופולין",
+      "direction": "Toward Herzliya",
+      "direction_he": "לכיוון הרצליה",
+      "color": "#E91E63",
+      "stops_count": 18,
+      "stops": [
+        {"station_id": "21021", "name": "Herzliya Train Station", "name_he": "תחנת רכבת הרצליה", "sequence": 1, "location": {"lat": 32.1545, "lon": 34.8247}}
+      ]
+    },
+    {
+      "id": "572",
+      "number": "572",
+      "operator": "metropoline",
+      "operator_name": "Metropoline",
+      "operator_name_he": "מטרופולין",
+      "direction": "Toward Tel Aviv University",
+      "direction_he": "לכיוון אוניברסיטת תל אביב",
+      "color": "#E91E63",
+      "stops_count": 25,
+      "stops": [
+        {"station_id": "21010", "name": "Tel Aviv University", "name_he": "אוניברסיטת תל אביב", "sequence": 1, "location": {"lat": 32.1133, "lon": 34.8043}},
+        {"station_id": "21011", "name": "Ramat Aviv Mall", "name_he": "קניון רמת אביב", "sequence": 2, "location": {"lat": 32.1156, "lon": 34.8156}}
+      ]
+    },
+    {
+      "id": "train_1",
+      "number": "Train",
+      "operator": "israel_railways",
+      "operator_name": "Israel Railways",
+      "operator_name_he": "רכבת ישראל",
+      "direction": "Toward Haifa via Herzliya",
+      "direction_he": "לכיוון חיפה דרך הרצליה",
+      "color": "#9C27B0",
+      "stops_count": 12,
+      "stops": [
+        {"station_id": "21008", "name": "Azrieli Center", "name_he": "מרכז עזריאלי", "sequence": 1, "location": {"lat": 32.0743, "lon": 34.7925}},
+        {"station_id": "21009", "name": "Hashalom Train Station", "name_he": "תחנת רכבת השלום", "sequence": 2, "location": {"lat": 32.0728, "lon": 34.7895}},
+        {"station_id": "21021", "name": "Herzliya Train Station", "name_he": "תחנת רכבת הרצליה", "sequence": 3, "location": {"lat": 32.1545, "lon": 34.8247}}
+      ]
+    },
+    {
+      "id": "100",
+      "number": "100",
+      "operator": "superbus",
+      "operator_name": "Superbus",
+      "operator_name_he": "סופרבוס",
+      "direction": "Toward Rishon LeZion",
+      "direction_he": "לכיוון ראשון לציון",
+      "color": "#00BCD4",
+      "stops_count": 30,
+      "stops": []
+    },
+    {
+      "id": "101",
+      "number": "101",
+      "operator": "superbus",
+      "operator_name": "Superbus",
+      "operator_name_he": "סופרבוס",
+      "direction": "Toward Bat Yam",
+      "direction_he": "לכיוון בת ים",
+      "color": "#00BCD4",
+      "stops_count": 28,
+      "stops": []
+    },
+    {
+      "id": "200",
+      "number": "200",
+      "operator": "egged",
+      "operator_name": "Egged",
+      "operator_name_he": "אגד",
+      "direction": "Toward Petah Tikva",
+      "direction_he": "לכיוון פתח תקווה",
+      "color": "#4CAF50",
+      "stops_count": 40,
+      "stops": []
+    },
+    {
+      "id": "201",
+      "number": "201",
+      "operator": "egged",
+      "operator_name": "Egged",
+      "operator_name_he": "אגד",
+      "direction": "Toward Ramat Gan",
+      "direction_he": "לכיוון רמת גן",
+      "color": "#4CAF50",
+      "stops_count": 35,
+      "stops": []
+    },
+    {
+      "id": "51",
+      "number": "51",
+      "operator": "dan",
+      "operator_name": "Dan",
+      "operator_name_he": "דן",
+      "direction": "Toward Holon",
+      "direction_he": "לכיוון חולון",
+      "color": "#2196F3",
+      "stops_count": 32,
+      "stops": []
+    },
+    {
+      "id": "52",
+      "number": "52",
+      "operator": "dan",
+      "operator_name": "Dan",
+      "operator_name_he": "דן",
+      "direction": "Toward Bat Yam",
+      "direction_he": "לכיוון בת ים",
+      "color": "#2196F3",
+      "stops_count": 28,
+      "stops": []
+    },
+    {
+      "id": "10",
+      "number": "10",
+      "operator": "dan",
+      "operator_name": "Dan",
+      "operator_name_he": "דן",
+      "direction": "Toward Bnei Brak",
+      "direction_he": "לכיוון בני ברק",
+      "color": "#2196F3",
+      "stops_count": 25,
+      "stops": []
+    },
+    {
+      "id": "11",
+      "number": "11",
+      "operator": "dan",
+      "operator_name": "Dan",
+      "operator_name_he": "דן",
+      "direction": "Toward Givatayim",
+      "direction_he": "לכיוון גבעתיים",
+      "color": "#2196F3",
+      "stops_count": 22,
+      "stops": []
+    },
+    {
+      "id": "66",
+      "number": "66",
+      "operator": "kavim",
+      "operator_name": "Kavim",
+      "operator_name_he": "קווים",
+      "direction": "Toward Herzliya",
+      "direction_he": "לכיוון הרצליה",
+      "color": "#FF9800",
+      "stops_count": 30,
+      "stops": []
+    },
+    {
+      "id": "67",
+      "number": "67",
+      "operator": "kavim",
+      "operator_name": "Kavim",
+      "operator_name_he": "קווים",
+      "direction": "Toward Raanana",
+      "direction_he": "לכיוון רעננה",
+      "color": "#FF9800",
+      "stops_count": 35,
+      "stops": []
+    },
+    {
+      "id": "125",
+      "number": "125",
+      "operator": "metropoline",
+      "operator_name": "Metropoline",
+      "operator_name_he": "מטרופולין",
+      "direction": "Toward Kfar Saba",
+      "direction_he": "לכיוון כפר סבא",
+      "color": "#E91E63",
+      "stops_count": 40,
+      "stops": []
+    },
+    {
+      "id": "126",
+      "number": "126",
+      "operator": "metropoline",
+      "operator_name": "Metropoline",
+      "operator_name_he": "מטרופולין",
+      "direction": "Toward Netanya",
+      "direction_he": "לכיוון נתניה",
+      "color": "#E91E63",
+      "stops_count": 45,
+      "stops": []
+    }
+  ]
+}

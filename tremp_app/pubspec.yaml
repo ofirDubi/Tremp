@@ -1,0 +1,61 @@
+name: tremp_app
+description: Multimodal transportation routing app combining public transit with carpooling.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Map
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.0
+
+  # State management
+  provider: ^6.1.1
+
+  # Local storage
+  shared_preferences: ^2.2.2
+
+  # HTTP
+  http: ^1.2.0
+
+  # URL Launcher
+  url_launcher: ^6.2.4
+
+  # Icons
+  material_design_icons_flutter: ^7.0.7296
+
+  # Utilities - intl version pinned by flutter_localizations
+  intl: ^0.18.1
+
+  # Shimmer loading effects
+  shimmer: ^3.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+
+  # Assets - operators logos (to be added)
+  # assets:
+  #   - assets/operators/
+
+  # Custom fonts - Rubik for Hebrew/Latin support
+  # Uncomment when font files are added to assets/fonts/
+  # fonts:
+  #   - family: Rubik
+  #     fonts:
+  #       - asset: assets/fonts/Rubik-Regular.ttf
+  #       - asset: assets/fonts/Rubik-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/Rubik-Bold.ttf
+  #         weight: 700
