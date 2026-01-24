@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/arrival.dart';
 import '../models/line.dart';
@@ -8,30 +9,115 @@ import '../models/place.dart';
 import '../models/route.dart';
 import '../models/station.dart';
 
+/// Server mode for API configuration
+enum ServerMode {
+  mock,
+  real;
+
+  String get displayName {
+    switch (this) {
+      case ServerMode.mock:
+        return 'Mock Server';
+      case ServerMode.real:
+        return 'Real Server';
+    }
+  }
+}
+
+/// API configuration for managing server endpoints
+class ApiConfig {
+  /// Singleton instance
+  static final ApiConfig _instance = ApiConfig._internal();
+  factory ApiConfig() => _instance;
+  ApiConfig._internal();
+
+  /// Preference key for server mode
+  static const String _serverModeKey = 'server_mode';
+
+  /// Server URLs
+  /// Note: Android emulator uses 10.0.2.2 to reach host localhost
+  static const String mockServerUrl = 'http://10.0.2.2:8080';
+  static const String realServerUrl = 'http://10.0.2.2:8000';
+
+  /// Current server mode (defaults to mock)
+  ServerMode _serverMode = ServerMode.mock;
+
+  /// Get current server mode
+  ServerMode get serverMode => _serverMode;
+
+  /// Get current base URL based on server mode
+  String get baseUrl {
+    switch (_serverMode) {
+      case ServerMode.mock:
+        return mockServerUrl;
+      case ServerMode.real:
+        return realServerUrl;
+    }
+  }
+
+  /// Initialize configuration from stored preferences
+  Future<void> init() async {
+    final prefs = await SharedPreferences.getInstance();
+    final modeString = prefs.getString(_serverModeKey);
+    if (modeString != null) {
+      _serverMode = ServerMode.values.firstWhere(
+        (m) => m.name == modeString,
+        orElse: () => ServerMode.mock,
+      );
+    }
+  }
+
+  /// Set server mode and persist to preferences
+  Future<void> setServerMode(ServerMode mode) async {
+    _serverMode = mode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_serverModeKey, mode.name);
+  }
+
+  /// Toggle between mock and real server
+  Future<void> toggleServerMode() async {
+    final newMode = _serverMode == ServerMode.mock
+        ? ServerMode.real
+        : ServerMode.mock;
+    await setServerMode(newMode);
+  }
+}
+
 /// API service for communicating with the Tremp backend
 class ApiService {
-  /// Base URL for the API (mock server by default)
-  /// Note: Android emulator uses 10.0.2.2 to reach host localhost
-  static const String _mockServerUrl = 'http://10.0.2.2:8080';
-  static const String _realServerUrl = 'http://10.0.2.2:8000';
-
-  final String _baseUrl;
   final http.Client _client;
+  final ApiConfig _config;
 
   ApiService({
-    String? baseUrl,
     http.Client? client,
-  })  : _baseUrl = baseUrl ?? _mockServerUrl,
-        _client = client ?? http.Client();
+    ApiConfig? config,
+  })  : _client = client ?? http.Client(),
+        _config = config ?? ApiConfig();
+
+  /// Get current base URL
+  String get _baseUrl => _config.baseUrl;
+
+  /// Get current server mode
+  ServerMode get serverMode => _config.serverMode;
+
+  /// Set server mode
+  Future<void> setServerMode(ServerMode mode) => _config.setServerMode(mode);
+
+  /// Toggle between mock and real server
+  Future<void> toggleServerMode() => _config.toggleServerMode();
 
   /// Create an ApiService pointing to the mock server
   factory ApiService.mock() {
-    return ApiService(baseUrl: _mockServerUrl);
+    final config = ApiConfig();
+    config._serverMode = ServerMode.mock;
+    return ApiService(config: config);
   }
 
   /// Create an ApiService pointing to the real server
   factory ApiService.real() {
-    return ApiService(baseUrl: _realServerUrl);
+    final config = ApiConfig();
+    config._serverMode = ServerMode.real;
+    return ApiService(config: config);
   }
 
   /// Get stations within a bounding box
@@ -222,8 +308,12 @@ class ApiService {
   }
 
   /// Get a single line by ID (with stops)
-  Future<Line> getLine(String id) async {
-    final uri = Uri.parse('$_baseUrl/line/$id');
+  Future<Line> getLine(String id, {int direction = 0}) async {
+    final uri = Uri.parse('$_baseUrl/line/$id').replace(
+      queryParameters: {
+        'direction': direction.toString(),
+      },
+    );
 
     final response = await _client.get(uri);
 

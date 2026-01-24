@@ -27,7 +27,7 @@ class StationsBrowserProvider extends ChangeNotifier {
   static const int _maxRecentStations = 10;
 
   StationsBrowserProvider({ApiService? apiService})
-      : _apiService = apiService ?? ApiService.mock() {
+      : _apiService = apiService ?? ApiService() {
     _loadRecentStations();
     loadStations();
   }

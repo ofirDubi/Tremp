@@ -42,7 +42,7 @@ class RouteSearchProvider extends ChangeNotifier {
   Timer? _debounceTimer;
 
   RouteSearchProvider({ApiService? apiService})
-      : _apiService = apiService ?? ApiService.mock() {
+      : _apiService = apiService ?? ApiService() {
     _loadSavedData();
   }
 

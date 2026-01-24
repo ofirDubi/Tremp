@@ -34,6 +34,9 @@ dependencies:
   # Utilities - intl version pinned by flutter_localizations
   intl: ^0.18.1
 
+  # Shimmer loading effects
+  shimmer: ^3.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

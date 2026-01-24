@@ -25,7 +25,7 @@ class LinesBrowserProvider extends ChangeNotifier {
   static const int _maxRecentLines = 10;
 
   LinesBrowserProvider({ApiService? apiService})
-      : _apiService = apiService ?? ApiService.mock() {
+      : _apiService = apiService ?? ApiService() {
     _loadRecentLines();
     loadLines();
   }

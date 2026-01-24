@@ -11,9 +11,13 @@ import 'screens/map_home/map_home_screen.dart';
 import 'screens/lines_browser/lines_browser_screen.dart';
 import 'screens/stations_browser/stations_browser_screen.dart';
 import 'screens/profile/profile_screen.dart';
+import 'services/api_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize API configuration (loads saved server mode preference)
+  await ApiConfig().init();
 
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(

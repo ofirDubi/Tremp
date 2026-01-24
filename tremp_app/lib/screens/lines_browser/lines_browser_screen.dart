@@ -5,7 +5,10 @@ import '../../models/line.dart';
 import '../../providers/lines_browser_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/error_state.dart';
 import '../../widgets/line_card.dart';
+import '../../widgets/shimmer_loading.dart';
 import 'line_detail_screen.dart';
 
 /// Lines Browser Screen - Browse and search bus/train lines
@@ -258,77 +261,31 @@ class _LinesBrowserScreenState extends State<LinesBrowserScreen> {
   }
 
   Widget _buildLoadingState() {
-    return const Center(
-      child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
-      ),
+    return ListView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 8,
+      itemBuilder: (context, index) => const LineCardSkeleton(),
     );
   }
 
   Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppColors.errorRed,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'שגיאה בטעינת קווים',
-              style: AppTextStyles.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            TextButton.icon(
-              onPressed: () => _provider.loadLines(),
-              icon: const Icon(Icons.refresh),
-              label: const Text('נסה שוב'),
-            ),
-          ],
-        ),
-      ),
+    // Detect error type and show appropriate message
+    if (error.contains('SocketException') || error.contains('Connection refused')) {
+      return ErrorState.network(onRetry: () => _provider.loadLines());
+    }
+    if (error.contains('TimeoutException')) {
+      return ErrorState.timeout(onRetry: () => _provider.loadLines());
+    }
+    return ErrorState(
+      title: 'שגיאה בטעינת קווים',
+      message: error,
+      onRetry: () => _provider.loadLines(),
     );
   }
 
   Widget _buildEmptySearchState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.search_off,
-              size: 64,
-              color: AppColors.textTertiary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'לא נמצאו קווים',
-              style: AppTextStyles.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'נסה לחפש לפי מספר קו או יעד',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState.noSearchResults(
+      subtitle: 'נסה לחפש לפי מספר קו או יעד',
     );
   }
 }

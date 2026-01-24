@@ -29,7 +29,7 @@ class StationProvider extends ChangeNotifier {
   MapCamera? _lastLoadedBounds;
 
   StationProvider({ApiService? apiService})
-      : _apiService = apiService ?? ApiService.mock();
+      : _apiService = apiService ?? ApiService();
 
   /// All loaded stations
   List<Station> get stations => _stations;

@@ -5,6 +5,9 @@ import '../../models/station.dart';
 import '../../providers/stations_browser_provider.dart';
 import '../../theme/colors.dart';
 import '../../theme/text_styles.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/error_state.dart';
+import '../../widgets/shimmer_loading.dart';
 import '../../widgets/station_card.dart';
 import 'station_detail_screen.dart';
 
@@ -258,77 +261,31 @@ class _StationsBrowserScreenState extends State<StationsBrowserScreen> {
   }
 
   Widget _buildLoadingState() {
-    return const Center(
-      child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryBlue),
-      ),
+    return ListView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 8,
+      itemBuilder: (context, index) => const StationCardSkeleton(),
     );
   }
 
   Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppColors.errorRed,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'שגיאה בטעינת תחנות',
-              style: AppTextStyles.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            TextButton.icon(
-              onPressed: () => _provider.loadStations(),
-              icon: const Icon(Icons.refresh),
-              label: const Text('נסה שוב'),
-            ),
-          ],
-        ),
-      ),
+    // Detect error type and show appropriate message
+    if (error.contains('SocketException') || error.contains('Connection refused')) {
+      return ErrorState.network(onRetry: () => _provider.loadStations());
+    }
+    if (error.contains('TimeoutException')) {
+      return ErrorState.timeout(onRetry: () => _provider.loadStations());
+    }
+    return ErrorState(
+      title: 'שגיאה בטעינת תחנות',
+      message: error,
+      onRetry: () => _provider.loadStations(),
     );
   }
 
   Widget _buildEmptySearchState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.search_off,
-              size: 64,
-              color: AppColors.textTertiary,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'לא נמצאו תחנות',
-              style: AppTextStyles.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'נסה לחפש לפי מספר תחנה או שם',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return EmptyState.noSearchResults(
+      subtitle: 'נסה לחפש לפי מספר תחנה או שם',
     );
   }
 }

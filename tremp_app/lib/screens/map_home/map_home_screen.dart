@@ -167,7 +167,8 @@ class _MapHomeScreenState extends State<MapHomeScreen> {
   Widget _buildMap() {
     return Consumer<StationProvider>(
       builder: (context, stationProvider, child) {
-        return FlutterMap(
+        return RepaintBoundary(
+          child: FlutterMap(
           mapController: _mapController,
           options: MapOptions(
             initialCenter: _defaultCenter,
@@ -205,6 +206,7 @@ class _MapHomeScreenState extends State<MapHomeScreen> {
                 ],
               ),
           ],
+        ),
         );
       },
     );
