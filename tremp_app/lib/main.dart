@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
 import 'theme/colors.dart';
 import 'providers/station_provider.dart';
+import 'providers/profile_provider.dart';
 import 'screens/map_home/map_home_screen.dart';
 import 'screens/lines_browser/lines_browser_screen.dart';
 import 'screens/stations_browser/stations_browser_screen.dart';
@@ -34,6 +35,7 @@ class TrempApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => StationProvider()),
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
       ],
       child: MaterialApp(
         title: 'Tremp',

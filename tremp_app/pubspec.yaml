@@ -25,6 +25,9 @@ dependencies:
   # HTTP
   http: ^1.2.0
 
+  # URL Launcher
+  url_launcher: ^6.2.4
+
   # Icons
   material_design_icons_flutter: ^7.0.7296
 
